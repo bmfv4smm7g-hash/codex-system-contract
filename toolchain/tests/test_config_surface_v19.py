@@ -11,6 +11,7 @@ from codex_wire_audit.config_feature_registry import (
     extract_feature_schema_policy,
 )
 from codex_wire_audit.config_schema_catalog import ConfigSchemaError, build_config_schema_catalog
+from codex_wire_audit.config_effect_specs import legacy_compatibility_settings
 from codex_wire_audit.diagnostics import DiagnosticCollector
 from codex_wire_audit.extractors import create_extractors
 from codex_wire_audit.extractors.config_effects import ConfigEffectsExtractor, SOURCE_IDS
@@ -53,6 +54,18 @@ def _schema() -> dict[str, object]:
         "openai_base_url": {"type": "string", "description": "OpenAI provider override"},
         "responses_api_metadata": {"type": "object", "additionalProperties": {"type": "string"}},
         "mcp_servers": {"type": "object", "additionalProperties": {"type": "object"}},
+        "mcp_oauth_credentials_store": {"type": "string"},
+        "mcp_oauth_callback_port": {"type": "integer"},
+        "mcp_oauth_callback_url": {"type": "string"},
+        "mcp_optional_startup_grace_ms": {"type": "integer"},
+        "apps_mcp_product_sku": {"type": "string"},
+        "orchestrator": {
+            "type": "object",
+            "properties": {
+                "skills": {"$ref": "#/definitions/OrchestratorFeatureToml"},
+                "mcp": {"$ref": "#/definitions/OrchestratorFeatureToml"},
+            },
+        },
         "model_providers": {
             "type": "object",
             "additionalProperties": {"$ref": "#/definitions/ModelProviderInfo"},
@@ -101,6 +114,11 @@ def _schema() -> dict[str, object]:
                 "type": "object",
                 "additionalProperties": False,
                 "properties": {"turn_metadata_includes_tool_info": {"type": "boolean"}},
+            },
+            "OrchestratorFeatureToml": {
+                "type": "object",
+                "additionalProperties": False,
+                "properties": {"enabled": {"type": "boolean"}},
             },
             "ModelProviderInfo": {
                 "type": "object",
@@ -173,8 +191,38 @@ def _snapshot(schema: dict[str, object] | None = None, feature_source: str = FEA
         SOURCE_IDS["generated_schema"]: json.dumps(schema or _schema(), sort_keys=True),
         SOURCE_IDS["feature_registry"]: feature_source,
         SOURCE_IDS["schema_generator"]: FEATURE_SCHEMA_SOURCE,
-        SOURCE_IDS["config_toml"]: "pub struct ConfigToml {}",
-        SOURCE_IDS["core_config"]: "pub struct Config {}",
+        SOURCE_IDS["config_toml"]: """
+            pub struct OrchestratorToml { pub skills: Option<OrchestratorFeatureToml>, pub mcp: Option<OrchestratorFeatureToml> }
+            pub struct OrchestratorFeatureToml { pub enabled: Option<bool> }
+            pub struct ConfigToml {
+                pub mcp_oauth_credentials_store: Option<OAuthCredentialsStoreMode>,
+                pub mcp_oauth_callback_port: Option<u16>,
+                pub mcp_oauth_callback_url: Option<String>,
+                pub mcp_optional_startup_grace_ms: Option<u64>,
+                pub apps_mcp_product_sku: Option<String>,
+                pub orchestrator: Option<OrchestratorToml>,
+            }
+        """,
+        SOURCE_IDS["core_config"]: """
+            fn resolve_mcp_oauth_credentials_store_mode() {}
+            const DEFAULT_OPTIONAL_MCP_STARTUP_GRACE: u64 = 1000;
+            fn resolve_orchestrator_feature_enabled() {}
+            struct Config {
+                mcp_oauth_callback_port: Option<u16>,
+                mcp_oauth_callback_url: Option<String>,
+                mcp_optional_startup_grace: Duration,
+                apps_mcp_product_sku: Option<String>,
+                orchestrator_skills_enabled: bool,
+                orchestrator_mcp_enabled: bool,
+            }
+            fn build(cfg: ConfigToml) {
+                let _ = Config {
+                    mcp_oauth_callback_port: cfg.mcp_oauth_callback_port,
+                    mcp_oauth_callback_url: cfg.mcp_oauth_callback_url.clone(),
+                    apps_mcp_product_sku: cfg.apps_mcp_product_sku.clone(),
+                };
+            }
+        """,
         SOURCE_IDS["provider_info"]: "pub struct ModelProviderInfo {}",
         SOURCE_IDS["turn_metadata"]: "pub struct CodexResponsesMetadata {}",
         SOURCE_IDS["activation"]: "fn apply_experimental_context() {}",
@@ -292,28 +340,49 @@ def test_config_effects_fails_visible_when_full_picture_anchor_disappears() -> N
     assert "CONFIG_EFFECT_PATH_MISSING" in codes
 
 
-def test_surface_graph_connects_canonical_and_legacy_effects() -> None:
+def test_surface_graph_is_canonical_and_does_not_consume_legacy_effects() -> None:
     diagnostics = DiagnosticCollector()
     result = ConfigEffectsExtractor().extract(_snapshot(), diagnostics)
-    legacy = {
-        "config_protocol": {
-            "wire_affecting_settings": [
-                {
-                    "setting": "model",
-                    "wire_effects": [
-                        {"layer": "request_body", "path": "ResponsesApiRequest.model", "behavior": "select model"}
-                    ],
-                }
-            ]
-        }
-    }
-    graph = compose_surface_graph(result.data, {}, legacy)
-    assert graph["coverage"]["legacy_effect_count"] == 1
+    graph = compose_surface_graph(result.data, {})
+    assert graph["coverage"]["legacy_effect_count"] == 0
+    assert graph["coverage"]["legacy_compatibility_input"] == "not_consumed"
+    assert not any(key.startswith("legacy_surface.") for key in graph["nodes"])
+    assert not any(edge.get("proof_tier") == "legacy_compatibility" for edge in graph["edges"])
     assert graph["views"]["by_config"]["config.model"]
     assert graph["views"]["by_surface"]["surface.context_management.activation"]
     assert graph["views"]["by_feature"]["feature.context_management"]
     assert graph["coverage"]["schema_policy_count"] == len(FEATURE_KEYS)
     assert graph["coverage"]["unresolved_node_refs"] == []
+
+
+def test_frozen_v10_wire_setting_catalog_has_native_closure() -> None:
+    diagnostics = DiagnosticCollector()
+    result = ConfigEffectsExtractor().extract(_snapshot(), diagnostics)
+    expected = {
+        "model", "model_provider", "model_reasoning_effort", "model_reasoning_summary",
+        "model_verbosity", "service_tier", "web_search", "responses_api_metadata",
+        "mcp_servers", "mcp_oauth_credentials_store", "mcp_oauth_callback_port",
+        "mcp_oauth_callback_url", "mcp_optional_startup_grace_ms", "apps_mcp_product_sku",
+        "chatgpt_base_url", "openai_base_url", "orchestrator",
+    }
+    assert set(legacy_compatibility_settings()) == expected
+    assert set(result.data["coverage"]["legacy_compatibility_settings_covered"]) == expected
+    assert result.data["coverage"]["legacy_compatibility_settings_missing"] == []
+    assert result.data["surface_graph"]["coverage"]["legacy_effect_count"] == 0
+
+
+def test_missing_native_effect_source_anchor_fails_visible() -> None:
+    snapshot = _snapshot()
+    core = snapshot.files[SOURCE_IDS["core_config"]]
+    snapshot.files[SOURCE_IDS["core_config"]] = SourceFile.create(
+        spec=_registry().get(SOURCE_IDS["core_config"]),
+        selected_path=core.selected_path,
+        raw_bytes=core.raw_bytes.replace(b"orchestrator_mcp_enabled", b"orchestrator_mcp_removed"),
+    )
+    diagnostics = DiagnosticCollector()
+    result = ConfigEffectsExtractor().extract(snapshot, diagnostics)
+    assert not result.semantic_complete
+    assert "CONFIG_EFFECT_SOURCE_ANCHOR_MISSING" in {item.code for item in diagnostics.values()}
 
 
 def test_config_surface_schema_validates_extracted_contract() -> None:

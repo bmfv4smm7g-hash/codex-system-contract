@@ -75,44 +75,16 @@ def _declared_target_nodes(effect_links: list[dict[str, Any]]) -> dict[str, dict
         if target in nodes:
             continue
         prefix = target.split(".", 2)[1] if target.startswith("surface.") and "." in target else "surface"
-        nodes[target] = _node(target, prefix, target.removeprefix("surface.").replace(".", " / "), declaration="config_effect_spec")
+        nodes[target] = _node(
+            target, prefix, target.removeprefix("surface.").replace(".", " / "),
+            declaration="config_effect_spec", effect_id=link.get("id"), proof_tier=link.get("proof_tier"),
+        )
     return nodes
-
-
-def _legacy_effects(report: Mapping[str, Any] | None) -> tuple[dict[str, dict[str, Any]], list[dict[str, Any]]]:
-    nodes: dict[str, dict[str, Any]] = {}
-    edges: list[dict[str, Any]] = []
-    if not isinstance(report, Mapping):
-        return nodes, edges
-    settings = ((report.get("config_protocol") or {}).get("wire_affecting_settings") or [])
-    for setting in settings:
-        if not isinstance(setting, Mapping) or not isinstance(setting.get("setting"), str):
-            continue
-        config_path = str(setting["setting"])
-        source_id = f"config.{config_path}"
-        for index, effect in enumerate(setting.get("wire_effects") or []):
-            if not isinstance(effect, Mapping):
-                continue
-            layer = str(effect.get("layer") or "uncategorized")
-            path = str(effect.get("path") or "unknown")
-            target_id = f"legacy_surface.{layer}.{hashlib.sha256(path.encode()).hexdigest()[:12]}"
-            nodes[target_id] = _node(
-                target_id, "legacy_compatibility_surface", path,
-                layer=layer, behavior=effect.get("behavior"), proof_tier="legacy_compatibility",
-            )
-            edges.append(_edge(
-                f"legacy_effect.{hashlib.sha256(f'{config_path}:{index}:{layer}:{path}'.encode()).hexdigest()[:16]}",
-                source_id, target_id, "legacy_projects_to",
-                behavior=effect.get("behavior"), condition=effect.get("condition"),
-                proof_tier="legacy_compatibility",
-            ))
-    return nodes, edges
 
 
 def compose_surface_graph(
     config_data: Mapping[str, Any],
     extractors: Mapping[str, Any],
-    legacy_report: Mapping[str, Any] | None,
 ) -> dict[str, Any]:
     config_paths = ((config_data.get("config_schema") or {}).get("paths") or {})
     feature_rows = ((config_data.get("feature_crosswalk") or {}).get("features") or [])
@@ -145,8 +117,6 @@ def compose_surface_graph(
         )
     nodes.update(_declared_target_nodes(effect_links))
     nodes.update(_canonical_surface_nodes(extractors))
-    legacy_nodes, legacy_edges = _legacy_effects(legacy_report)
-    nodes.update(legacy_nodes)
 
     edges: list[dict[str, Any]] = []
     for row in feature_rows:
@@ -184,7 +154,6 @@ def compose_surface_graph(
                 behavior=link.get("behavior"), condition=link.get("condition"),
                 proof_tier=link.get("proof_tier"),
             ))
-    edges.extend(edge for edge in legacy_edges if edge["source"] in nodes)
     edges.sort(key=lambda item: item["id"])
 
     referenced = {edge["source"] for edge in edges} | {edge["target"] for edge in edges}
@@ -215,7 +184,8 @@ def compose_surface_graph(
             "node_count": len(nodes),
             "edge_count": len(edges),
             "canonical_effect_count": sum(edge.get("proof_tier") != "legacy_compatibility" for edge in edges),
-            "legacy_effect_count": sum(edge.get("proof_tier") == "legacy_compatibility" for edge in edges),
+            "legacy_effect_count": 0,
+            "legacy_compatibility_input": "not_consumed",
             "schema_policy_count": sum(node.get("kind") == "config_schema_policy" for node in nodes.values()),
             "unresolved_node_refs": unresolved,
         },

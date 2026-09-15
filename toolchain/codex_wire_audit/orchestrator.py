@@ -263,7 +263,7 @@ def generate_report(args: Any, legacy: LegacyModules, *, baseline_report: Mappin
     deterministic = bool(getattr(args, 'deterministic', False) or getattr(args, 'format', None) == 'canonical-json')
     report = legacy.base.build_report(args.repo, snapshot.revision.requested_ref, loaded.commit, base_src, strict=False, surface_sources=surface_src, surface_warnings=surface_warnings, deterministic=deterministic)
     report = legacy.entrypoint.enhance(report, base_src, extra_src, extra_warnings, False)
-    evolution_contract, extractor_results = build_evolution_contract(snapshot, registry, diagnostics, coverage_profile=getattr(args, 'coverage_profile', 'codex_wire_full'), legacy_report=report)
+    evolution_contract, extractor_results = build_evolution_contract(snapshot, registry, diagnostics, coverage_profile=getattr(args, 'coverage_profile', 'codex_wire_full'))
     turn_result = extractor_results.get('extractor.turn_metadata')
     if turn_result:
         apply_turn_metadata_overlay(report, turn_result)

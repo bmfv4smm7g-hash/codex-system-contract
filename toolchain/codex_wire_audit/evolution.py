@@ -119,7 +119,7 @@ def apply_turn_metadata_overlay(report: MutableMapping[str, Any], turn_result: E
 def _dimension_state(condition: bool, *, false_state: str='partial') -> str:
     return 'complete' if condition else false_state
 
-def build_evolution_contract(snapshot: SourceSnapshot, registry: SourceRegistry, diagnostics: DiagnosticCollector, *, coverage_profile: str='codex_wire_full', legacy_report: Mapping[str, Any] | None=None) -> tuple[dict[str, Any], dict[str, ExtractorResult]]:
+def build_evolution_contract(snapshot: SourceSnapshot, registry: SourceRegistry, diagnostics: DiagnosticCollector, *, coverage_profile: str='codex_wire_full') -> tuple[dict[str, Any], dict[str, ExtractorResult]]:
     results: dict[str, ExtractorResult] = {}
     for extractor in create_extractors():
         if extractor.source_spec_ids and (not any((source_id in snapshot.files for source_id in extractor.source_spec_ids))):
@@ -129,7 +129,7 @@ def build_evolution_contract(snapshot: SourceSnapshot, registry: SourceRegistry,
     config_result = results.get('extractor.config_effects')
     if config_result is not None and config_result.data:
         config_data = copy.deepcopy(config_result.data)
-        graph = compose_surface_graph(config_data, results, legacy_report)
+        graph = compose_surface_graph(config_data, results)
         config_data['surface_graph'] = graph
         graph_complete = not (graph.get('coverage') or {}).get('unresolved_node_refs')
         if not graph_complete:
@@ -142,7 +142,7 @@ def build_evolution_contract(snapshot: SourceSnapshot, registry: SourceRegistry,
     syntax_complete = bool(results) and all((result.data for result in results.values()))
     semantics_complete = bool(results) and all((result.semantic_complete for result in results.values()))
     overall = required_available and syntax_complete and semantics_complete and (not any((item.severity == 'error' for item in diagnostics.values())))
-    contract: dict[str, Any] = {'$schema': 'codex_wire_audit_v11_schemas/evolution-contract.schema.json', 'schema_version': EVOLUTION_CONTRACT_VERSION, 'generator_version': GENERATOR_VERSION, 'coverage_profile': coverage_profile, 'source_revision': snapshot.revision.to_dict(), 'source_registry': registry.to_dict(), 'source_snapshot': snapshot.manifest(), 'extractors': {extractor_id: {'extractor_id': result.extractor_id, 'schema_version': result.schema_version, 'source_spec_ids': list(result.source_spec_ids), 'semantic_complete': result.semantic_complete, 'data': copy.deepcopy(result.data)} for extractor_id, result in sorted(results.items())}, 'migration': {'stage': 'hybrid_canonical_ir', 'canonical_ir_extractors': sorted(results), 'legacy_adapter': 'frozen v10 extraction/report renderer', 'legacy_machine_reconstruction_remaining': True, 'extension_contract': 'new source-aware semantic extractors register independently and emit canonical IR fragments; the compatibility adapter is not edited for new semantics'}, 'status': {'source_inventory': _dimension_state(required_available), 'syntax_extraction': _dimension_state(syntax_complete), 'semantic_classification': _dimension_state(semantics_complete), 'schema_resolution': 'pending_report_upgrade', 'runtime_observation': 'not_run', 'current_main_conformance': 'not_compared', 'overall': 'complete' if overall else 'partial'}, 'diagnostic_refs': [item.id for item in diagnostics.values()], 'diagnostic_summary': diagnostics.summary()}
+    contract: dict[str, Any] = {'$schema': 'codex_wire_audit_v11_schemas/evolution-contract.schema.json', 'schema_version': EVOLUTION_CONTRACT_VERSION, 'generator_version': GENERATOR_VERSION, 'coverage_profile': coverage_profile, 'source_revision': snapshot.revision.to_dict(), 'source_registry': registry.to_dict(), 'source_snapshot': snapshot.manifest(), 'extractors': {extractor_id: {'extractor_id': result.extractor_id, 'schema_version': result.schema_version, 'source_spec_ids': list(result.source_spec_ids), 'semantic_complete': result.semantic_complete, 'data': copy.deepcopy(result.data)} for extractor_id, result in sorted(results.items())}, 'migration': {'stage': 'canonical_ir', 'canonical_ir_extractors': sorted(results), 'legacy_adapter': 'outer v10 compatibility report only; excluded from system_contract', 'legacy_machine_reconstruction_remaining': False, 'extension_contract': 'source-derived semantic extractors compose the canonical system contract; frozen v10 rendering is compatibility-only'}, 'status': {'source_inventory': _dimension_state(required_available), 'syntax_extraction': _dimension_state(syntax_complete), 'semantic_classification': _dimension_state(semantics_complete), 'schema_resolution': 'pending_report_upgrade', 'runtime_observation': 'not_run', 'current_main_conformance': 'not_compared', 'overall': 'complete' if overall else 'partial'}, 'diagnostic_refs': [item.id for item in diagnostics.values()], 'diagnostic_summary': diagnostics.summary()}
     digest_value = copy.deepcopy(contract)
     digest_value.pop('integrity', None)
     contract['integrity'] = {'algorithm': 'sha256', 'canonicalization': 'codex-wire-audit-canonical-json-v2', 'canonical_ir_sha256': hashlib.sha256(canonical_json_bytes(digest_value)).hexdigest()}

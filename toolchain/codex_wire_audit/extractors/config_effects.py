@@ -5,7 +5,7 @@ from __future__ import annotations
 import copy
 from typing import Any
 
-from ..config_effect_specs import effect_specs, expanded_config_paths
+from ..config_effect_specs import effect_specs, expanded_config_paths, legacy_compatibility_settings
 from ..config_feature_registry import (
     crosswalk_features,
     extract_feature_registry,
@@ -60,15 +60,26 @@ def _emit(
     )
 
 
-def _effect_links(catalog: dict[str, Any]) -> tuple[list[dict[str, Any]], list[str]]:
+def _effect_links(
+    catalog: dict[str, Any],
+    sources: dict[str, SourceFile | None],
+) -> tuple[list[dict[str, Any]], list[str], list[dict[str, str]], list[str]]:
     paths = set((catalog.get("paths") or {}).keys())
     links: list[dict[str, Any]] = []
-    missing: list[str] = []
+    missing_paths: list[str] = []
+    missing_anchors: list[dict[str, str]] = []
+    covered_legacy: set[str] = set()
     for spec in effect_specs():
         expanded = expanded_config_paths(spec, paths)
         if not expanded:
-            missing.extend(spec.config_paths)
+            missing_paths.extend(spec.config_paths)
             continue
+        for source_key, token in spec.source_checks:
+            source = sources.get(source_key)
+            if source is None or token not in source.text:
+                missing_anchors.append({"spec_id": spec.id, "source_key": source_key, "token": token})
+        if spec.legacy_setting:
+            covered_legacy.add(spec.legacy_setting)
         links.append({
             "id": spec.id,
             "config_paths": list(expanded),
@@ -78,7 +89,140 @@ def _effect_links(catalog: dict[str, Any]) -> tuple[list[dict[str, Any]], list[s
             "condition": spec.condition,
             "proof_tier": spec.proof_tier,
         })
-    return links, sorted(set(missing))
+    return (
+        links,
+        sorted(set(missing_paths)),
+        sorted(missing_anchors, key=lambda item: (item["spec_id"], item["source_key"], item["token"])),
+        sorted(covered_legacy),
+    )
+
+
+
+def _validate_semantics(
+    diagnostics: DiagnosticCollector,
+    *,
+    catalog: dict[str, Any],
+    registry: dict[str, Any],
+    schema_policy: dict[str, Any],
+    crosswalk: dict[str, Any],
+    missing_effect_paths: list[str],
+    missing_effect_anchors: list[dict[str, str]],
+    missing_legacy: list[str],
+    effect_sources: dict[str, SourceFile | None],
+    schema_source: SourceFile,
+    registry_source: SourceFile,
+    schema_generator_source: SourceFile,
+) -> bool:
+    complete = True
+    for ref in catalog.get("unresolved_references") or []:
+        complete = False
+        _emit(
+            diagnostics,
+            code="CONFIG_SCHEMA_REFERENCE_UNRESOLVED",
+            message=f"Generated config schema contains an unresolved reference: {ref}",
+            entity=f"config_schema.ref.{ref}",
+            source=schema_source,
+            details={"ref": ref},
+        )
+    for error in registry.get("parse_errors") or []:
+        complete = False
+        _emit(
+            diagnostics,
+            code=str(error.get("code") or "FEATURE_REGISTRY_PARSE_ERROR"),
+            message=str(error.get("message") or "Feature registry parse failure"),
+            entity="feature_registry",
+            source=registry_source,
+            details=copy.deepcopy(error),
+        )
+    for error in schema_policy.get("parse_errors") or []:
+        complete = False
+        _emit(
+            diagnostics,
+            code=str(error.get("code") or "FEATURE_SCHEMA_POLICY_PARSE_ERROR"),
+            message=str(error.get("message") or "Feature schema policy parse failure"),
+            entity="feature_schema_policy",
+            source=schema_generator_source,
+            details=copy.deepcopy(error),
+        )
+    for kind, values in (
+        ("FEATURE_REGISTRY_DUPLICATE_ID", registry.get("duplicate_ids") or []),
+        ("FEATURE_REGISTRY_DUPLICATE_KEY", registry.get("duplicate_keys") or []),
+    ):
+        if values:
+            complete = False
+            _emit(
+                diagnostics,
+                code=kind,
+                message=f"Feature registry contains duplicates: {', '.join(values)}",
+                entity="feature_registry",
+                source=registry_source,
+                details={"values": values},
+            )
+    for key in crosswalk.get("registered_without_root_schema") or []:
+        complete = False
+        _emit(
+            diagnostics,
+            code="REGISTERED_FEATURE_MISSING_FROM_CONFIG_SCHEMA",
+            message=f"Registered feature is absent from root generated config schema: {key}",
+            entity=f"feature.{key}",
+            source=registry_source,
+            details={"config_path": f"features.{key}"},
+        )
+    if missing_effect_paths:
+        complete = False
+        _emit(
+            diagnostics,
+            code="CONFIG_EFFECT_PATH_MISSING",
+            message="One or more required config-to-surface paths are absent from the generated schema.",
+            entity="config_effects",
+            source=schema_source,
+            details={"paths": missing_effect_paths},
+        )
+
+    for anchor in missing_effect_anchors:
+        complete = False
+        _emit(
+            diagnostics,
+            code="CONFIG_EFFECT_SOURCE_ANCHOR_MISSING",
+            message="A source anchor required by a canonical config-effect link is missing.",
+            entity=anchor["spec_id"],
+            source=effect_sources.get(anchor["source_key"]),
+            details=anchor,
+        )
+    if missing_legacy:
+        complete = False
+        _emit(
+            diagnostics,
+            code="CONFIG_LEGACY_EFFECT_COVERAGE_INCOMPLETE",
+            message="The frozen v10 wire-affecting setting catalog is not fully represented by canonical config-effect links.",
+            entity="config_effects.compatibility_closure",
+            source=schema_source,
+            details={"missing_settings": missing_legacy},
+        )
+
+    required_paths = {
+        "features.context_management",
+        "features.context_management.experimental_mode",
+        "features.token_budget.use_history_notes_extension",
+        "features.tool_registry.turn_metadata_includes_tool_info",
+        "openai_base_url",
+        "chatgpt_base_url",
+        "model_providers.*.experimental_bearer_token",
+        "responses_api_metadata.*",
+    }
+    absent_required = sorted(required_paths - set(catalog.get("paths") or {}))
+    if absent_required:
+        complete = False
+        _emit(
+            diagnostics,
+            code="CONFIG_FULL_PICTURE_ANCHOR_MISSING",
+            message="Generated schema is missing config anchors required to connect existing protocol surfaces.",
+            entity="config_surface.full_picture",
+            source=schema_source,
+            details={"paths": absent_required},
+        )
+
+    return complete
 
 
 class ConfigEffectsExtractor:
@@ -156,94 +300,26 @@ class ConfigEffectsExtractor:
             catalog.get("paths") or {},
             schema_policy,
         )
-        effect_links, missing_effect_paths = _effect_links(catalog)
-        complete = True
-        for ref in catalog.get("unresolved_references") or []:
-            complete = False
-            _emit(
-                diagnostics,
-                code="CONFIG_SCHEMA_REFERENCE_UNRESOLVED",
-                message=f"Generated config schema contains an unresolved reference: {ref}",
-                entity=f"config_schema.ref.{ref}",
-                source=schema_source,
-                details={"ref": ref},
-            )
-        for error in registry.get("parse_errors") or []:
-            complete = False
-            _emit(
-                diagnostics,
-                code=str(error.get("code") or "FEATURE_REGISTRY_PARSE_ERROR"),
-                message=str(error.get("message") or "Feature registry parse failure"),
-                entity="feature_registry",
-                source=registry_source,
-                details=copy.deepcopy(error),
-            )
-        for error in schema_policy.get("parse_errors") or []:
-            complete = False
-            _emit(
-                diagnostics,
-                code=str(error.get("code") or "FEATURE_SCHEMA_POLICY_PARSE_ERROR"),
-                message=str(error.get("message") or "Feature schema policy parse failure"),
-                entity="feature_schema_policy",
-                source=schema_generator_source,
-                details=copy.deepcopy(error),
-            )
-        for kind, values in (
-            ("FEATURE_REGISTRY_DUPLICATE_ID", registry.get("duplicate_ids") or []),
-            ("FEATURE_REGISTRY_DUPLICATE_KEY", registry.get("duplicate_keys") or []),
-        ):
-            if values:
-                complete = False
-                _emit(
-                    diagnostics,
-                    code=kind,
-                    message=f"Feature registry contains duplicates: {', '.join(values)}",
-                    entity="feature_registry",
-                    source=registry_source,
-                    details={"values": values},
-                )
-        for key in crosswalk.get("registered_without_root_schema") or []:
-            complete = False
-            _emit(
-                diagnostics,
-                code="REGISTERED_FEATURE_MISSING_FROM_CONFIG_SCHEMA",
-                message=f"Registered feature is absent from root generated config schema: {key}",
-                entity=f"feature.{key}",
-                source=registry_source,
-                details={"config_path": f"features.{key}"},
-            )
-        if missing_effect_paths:
-            complete = False
-            _emit(
-                diagnostics,
-                code="CONFIG_EFFECT_PATH_MISSING",
-                message="One or more required config-to-surface paths are absent from the generated schema.",
-                entity="config_effects",
-                source=schema_source,
-                details={"paths": missing_effect_paths},
-            )
-
-        required_paths = {
-            "features.context_management",
-            "features.context_management.experimental_mode",
-            "features.token_budget.use_history_notes_extension",
-            "features.tool_registry.turn_metadata_includes_tool_info",
-            "openai_base_url",
-            "chatgpt_base_url",
-            "model_providers.*.experimental_bearer_token",
-            "responses_api_metadata.*",
-        }
-        absent_required = sorted(required_paths - set(catalog.get("paths") or {}))
-        if absent_required:
-            complete = False
-            _emit(
-                diagnostics,
-                code="CONFIG_FULL_PICTURE_ANCHOR_MISSING",
-                message="Generated schema is missing config anchors required to connect existing protocol surfaces.",
-                entity="config_surface.full_picture",
-                source=schema_source,
-                details={"paths": absent_required},
-            )
+        effect_sources = {key: _source(snapshot, key) for key in SOURCE_IDS}
+        effect_links, missing_effect_paths, missing_effect_anchors, covered_legacy = _effect_links(
+            catalog, effect_sources
+        )
+        frozen_legacy = set(legacy_compatibility_settings())
+        missing_legacy = sorted(frozen_legacy - set(covered_legacy))
+        complete = _validate_semantics(
+    diagnostics,
+    catalog=catalog,
+    registry=registry,
+    schema_policy=schema_policy,
+    crosswalk=crosswalk,
+    missing_effect_paths=missing_effect_paths,
+    missing_effect_anchors=missing_effect_anchors,
+    missing_legacy=missing_legacy,
+    effect_sources=effect_sources,
+    schema_source=schema_source,
+    registry_source=registry_source,
+    schema_generator_source=schema_generator_source,
+)
 
         data: dict[str, Any] = {
             "$schema": "https://schemas.codex-wire-audit.invalid/v19/config-surface-semantics-v1.schema.json",
@@ -262,11 +338,15 @@ class ConfigEffectsExtractor:
                 "effect_link_count": len(effect_links),
                 "missing_effect_paths": missing_effect_paths,
                 "schema_only_feature_keys": crosswalk.get("schema_only_root_keys") or [],
-                "effect_semantics": "canonical selected links; remaining legacy effects are connected during report composition",
+                "effect_semantics": "canonical source-bound links; frozen v10 effects are regression-only and are not consumed by the canonical graph",
+                "legacy_compatibility_setting_count": len(frozen_legacy),
+                "legacy_compatibility_settings_covered": covered_legacy,
+                "legacy_compatibility_settings_missing": missing_legacy,
+                "missing_effect_source_anchors": missing_effect_anchors,
             },
             "semantic_complete": complete,
         }
-        data["surface_graph"] = compose_surface_graph(data, {}, None)
+        data["surface_graph"] = compose_surface_graph(data, {})
         data["semantic_digest"] = semantic_fingerprint({
             "config_schema": catalog,
             "feature_registry": registry,

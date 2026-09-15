@@ -652,17 +652,17 @@
   "generator_version": "12.0.0",
   "integrity": {
     "algorithm": "sha256",
-    "canonical_ir_sha256": "3555de73c6fdd9299389e10163a8137a4cac411fcfb0bf9aee927e91e0e87ebb",
+    "canonical_ir_sha256": "3b2d5b8b46e73d0cb20400fae8fc178f8ee1eb8e6bd078a8f1cb8ebee7c1950c",
     "canonicalization": "codex-wire-audit-canonical-json-v2"
   },
   "migration": {
     "canonical_ir_extractors": [
       "extractor.turn_metadata"
     ],
-    "extension_contract": "new source-aware semantic extractors register independently and emit canonical IR fragments; the compatibility adapter is not edited for new semantics",
-    "legacy_adapter": "frozen v10 extraction/report renderer",
-    "legacy_machine_reconstruction_remaining": true,
-    "stage": "hybrid_canonical_ir"
+    "extension_contract": "source-derived semantic extractors compose the canonical system contract; frozen v10 rendering is compatibility-only",
+    "legacy_adapter": "outer v10 compatibility report only; excluded from system_contract",
+    "legacy_machine_reconstruction_remaining": false,
+    "stage": "canonical_ir"
   },
   "schema_version": "1.0.0",
   "source_registry": {
