@@ -270,6 +270,10 @@ _RESPONSES_REQUEST_SPECS = (
     ("source_spec.base.core", "core", "codex-rs/core/src/client.rs", ("build_responses_request", "responses_request_properties_match", "build_ws_client_metadata")),
     ("source_spec.base.http", "http", "codex-rs/codex-api/src/endpoint/responses.rs", ("ResponsesEndpoint", "ResponsesClient", "stream_request")),
     ("source_spec.base.ws", "ws", "codex-rs/codex-api/src/endpoint/responses_websocket.rs", ("ResponsesWebsocketConnection", "ResponsesWebsocketClient", "stream_request")),
+    ("source_spec.extra.responses_transport_startup", "responses_transport_startup", "codex-rs/core/src/session_startup_prewarm.rs", ("schedule_startup_prewarm", "CodexResponsesRequestKind::Prewarm", "prewarm_websocket")),
+    ("source_spec.extra.responses_transport_session", "responses_transport_session", "codex-rs/core/src/session/session.rs", ("schedule_startup_prewarm", "record_initial_history")),
+    ("source_spec.extra.responses_transport_retry", "responses_transport_retry", "codex-rs/core/src/responses_retry.rs", ("handle_retryable_response_stream_error", "try_switch_fallback_transport", "Falling back from WebSockets to HTTPS transport")),
+    ("source_spec.extra.responses_transport_provider", "responses_transport_provider", "codex-rs/codex-api/src/provider.rs", ("websocket_url_for_path", "http", "https", "ws", "wss")),
 )
 
 _RESPONSES_LITE_SPECS = (
