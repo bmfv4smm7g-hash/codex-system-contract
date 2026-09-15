@@ -30,6 +30,16 @@ jobs:
           from pathlib import Path
           import json
 
+          extractor = Path('codex_wire_audit/extractors/app_server_rpc.py')
+          text = extractor.read_text()
+          old = '''def _enum_variants(text: str, name: str) -> list[str]:\n    body = _balanced_block(text, f"pub enum {name}")\n    if body is None:\n        return []\n    variants = re.findall(r"(?m)^\\s{4}(?:#\\[[^\\n]+\\]\\s*)*([A-Z][A-Za-z0-9_]*)\\b", body)\n    return list(dict.fromkeys(variants))\n'''
+          new = '''def _enum_variants(text: str, name: str) -> list[str]:\n    body = _balanced_block(text, f"pub enum {name}")\n    if body is None:\n        return []\n    variants = re.findall(\n        r"(?:^|,)\\s*(?:#\\[[^\\]]+\\]\\s*)*([A-Z][A-Za-z0-9_]*)\\b",\n        body,\n        re.MULTILINE,\n    )\n    return list(dict.fromkeys(variants))\n'''
+          if old in text:
+              text = text.replace(old, new, 1)
+          elif 'r"(?:^|,)\\s*' not in text:
+              raise SystemExit('enum parser marker missing')
+          extractor.write_text(text)
+
           registry = Path('codex_wire_audit/source_registry.py')
           text = registry.read_text()
           marker = '\n\n_MCP_SPECS = (\n'
@@ -126,6 +136,7 @@ jobs:
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add -- \
+            toolchain/codex_wire_audit/extractors/app_server_rpc.py \
             toolchain/codex_wire_audit/source_registry.py \
             toolchain/codex_wire_audit/extractors/__init__.py \
             toolchain/codex_wire_audit/coverage_profiles.v3.json \
