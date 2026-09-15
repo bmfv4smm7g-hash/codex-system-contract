@@ -213,8 +213,8 @@
       "qualified_name": "verify_git_source",
       "start_line": 75
     },
-    "physical_line_count": 19626,
-    "source_sha256": "1aa655d9864ed2943f08591c9c201c2cdea1bc975998ede5ebdd77b60f663b8b"
+    "physical_line_count": 19625,
+    "source_sha256": "bf2de6c60b2ceabb1be763230c1a1e5b04d1068894e2a03926b7611c5d67f3ee"
   },
   "active_package": {
     "function_count": 541,
@@ -298,7 +298,7 @@
         "file": "codex_wire_audit/extractors/config_effects.py",
         "line_count": 128,
         "qualified_name": "ConfigEffectsExtractor.extract",
-        "start_line": 236
+        "start_line": 235
       }
     ],
     "largest_functions_by_complexity": [
@@ -430,8 +430,8 @@
       "qualified_name": "verify_git_source",
       "start_line": 75
     },
-    "physical_line_count": 16279,
-    "source_sha256": "db121e3599b1863eb34e6aa3b076c8f7f25bc8f46d283e1b44319fd1b1bded73"
+    "physical_line_count": 16278,
+    "source_sha256": "2db04ce1e9e0927c94bab964f9f84c123d8f997b803771618471d829ae879993"
   },
   "active_release_tools": {
     "function_count": 135,
