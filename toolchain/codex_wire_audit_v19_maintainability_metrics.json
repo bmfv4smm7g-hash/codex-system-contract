@@ -1,10 +1,10 @@
 {
   "active_implementation": {
-    "function_count": 622,
+    "function_count": 635,
     "functions_over_200_lines": [],
     "functions_over_complexity_45": [],
     "internal_import_cycles": [],
-    "internal_import_edge_count": 195,
+    "internal_import_edge_count": 198,
     "largest_function": {
       "cyclomatic_complexity": 39,
       "file": "codex_wire_audit/proof_gate.py",
@@ -37,9 +37,9 @@
       {
         "cyclomatic_complexity": 14,
         "file": "codex_wire_audit/source_registry.py",
-        "line_count": 185,
+        "line_count": 174,
         "qualified_name": "from_legacy_maps",
-        "start_line": 256
+        "start_line": 277
       },
       {
         "cyclomatic_complexity": 19,
@@ -194,16 +194,16 @@
         "line_count": 452
       },
       {
-        "file": "codex_wire_audit/cli.py",
-        "line_count": 449
+        "file": "codex_wire_audit/source_registry.py",
+        "line_count": 450
       },
       {
-        "file": "codex_wire_audit/source_registry.py",
-        "line_count": 440
+        "file": "codex_wire_audit/cli.py",
+        "line_count": 449
       }
     ],
     "maximum_module_fan_out": 10,
-    "module_count": 77,
+    "module_count": 78,
     "modules_over_600_lines": [],
     "modules_over_fan_out_10": [],
     "most_complex_function": {
@@ -213,15 +213,15 @@
       "qualified_name": "verify_git_source",
       "start_line": 75
     },
-    "physical_line_count": 17959,
-    "source_sha256": "e11afbc5dd0884566a423f15a2177393aca204a2f2b0a39663bd80aa75a19a40"
+    "physical_line_count": 18302,
+    "source_sha256": "99d81766303cb837b076c0c0bc352fa6b760f60a7bd920eaaeb7ebd157aacfff"
   },
   "active_package": {
-    "function_count": 487,
+    "function_count": 500,
     "functions_over_200_lines": [],
     "functions_over_complexity_45": [],
     "internal_import_cycles": [],
-    "internal_import_edge_count": 154,
+    "internal_import_edge_count": 157,
     "largest_function": {
       "cyclomatic_complexity": 39,
       "file": "codex_wire_audit/proof_gate.py",
@@ -254,9 +254,9 @@
       {
         "cyclomatic_complexity": 14,
         "file": "codex_wire_audit/source_registry.py",
-        "line_count": 185,
+        "line_count": 174,
         "qualified_name": "from_legacy_maps",
-        "start_line": 256
+        "start_line": 277
       },
       {
         "cyclomatic_complexity": 17,
@@ -403,12 +403,12 @@
         "line_count": 494
       },
       {
-        "file": "codex_wire_audit/cli.py",
-        "line_count": 449
+        "file": "codex_wire_audit/source_registry.py",
+        "line_count": 450
       },
       {
-        "file": "codex_wire_audit/source_registry.py",
-        "line_count": 440
+        "file": "codex_wire_audit/cli.py",
+        "line_count": 449
       },
       {
         "file": "codex_wire_audit/extractors/execution_policy.py",
@@ -420,7 +420,7 @@
       }
     ],
     "maximum_module_fan_out": 10,
-    "module_count": 65,
+    "module_count": 66,
     "modules_over_600_lines": [],
     "modules_over_fan_out_10": [],
     "most_complex_function": {
@@ -430,8 +430,8 @@
       "qualified_name": "verify_git_source",
       "start_line": 75
     },
-    "physical_line_count": 14612,
-    "source_sha256": "957e524f5ad8813a15ae01dbf3a9e9ea74d35ba92e559e752bc887d411d87d8a"
+    "physical_line_count": 14955,
+    "source_sha256": "fc744d44060dfda76b32af12f75d2851a21e10536cad5bf57b98f2ad4516969d"
   },
   "active_release_tools": {
     "function_count": 135,
@@ -678,13 +678,13 @@
     "metadata_history_states": 19,
     "metadata_history_transitions": 9,
     "metadata_history_versions": 10,
-    "proof_schema_templates": 17,
+    "proof_schema_templates": 18,
     "registered_optional_sources": 122,
     "registered_required_sources": 16,
     "registered_source_specs": 138,
-    "regression_test_methods": 260,
+    "regression_test_methods": 266,
     "standalone_release_schemas": 1,
-    "strict_schema_templates": 26
+    "strict_schema_templates": 27
   },
   "metrics_schema_version": "3.0.0",
   "release": {

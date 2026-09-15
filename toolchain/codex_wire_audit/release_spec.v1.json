@@ -285,30 +285,36 @@
     },
     {
       "extractor_ids": [
-        "extractor.routing_transport"
+        "extractor.routing_transport",
+        "extractor.redirect_headers"
       ],
       "id": "routing_transport",
       "profile_assertions": {
         "codex_wire_full": {
           "required_extractors_contains": [
-            "extractor.routing_transport"
+            "extractor.routing_transport",
+            "extractor.redirect_headers"
           ]
         },
         "hybrid_v19": {
           "required_extractors_contains": [
-            "extractor.routing_transport"
+            "extractor.routing_transport",
+            "extractor.redirect_headers"
           ]
         },
         "routing_transport_only": {
           "required_extractors_contains": [
-            "extractor.routing_transport"
+            "extractor.routing_transport",
+            "extractor.redirect_headers"
           ]
         }
       },
       "required_resources": [
         "extractors/routing_transport.py",
         "proof_schema_templates/routing-transport-semantics-v1.schema.json",
-        "coverage_profiles.v3.json"
+        "coverage_profiles.v3.json",
+        "extractors/redirect_headers.py",
+        "proof_schema_templates/redirect-header-semantics-v1.schema.json"
       ],
       "status": "active_package"
     },
@@ -397,7 +403,8 @@
             "extractor.mcp_projection",
             "extractor.responses_request",
             "extractor.responses_lite",
-            "extractor.response_events"
+            "extractor.response_events",
+            "extractor.redirect_headers"
           ]
         }
       },
