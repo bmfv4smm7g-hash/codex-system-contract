@@ -1,9 +1,9 @@
-name: temporary-no-shim-hardening-20260910
+name: temporary-direct-authority-repair-20260915
 
 on:
   push:
     branches:
-      - hardening/canonical-no-shim-20260910
+      - system-contract/fix/direct-authority
     paths:
       - .github/workflows/temporary-no-shim-hardening-20260910.yml
   workflow_dispatch:
@@ -12,7 +12,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: temporary-no-shim-hardening-20260910
+  group: temporary-direct-authority-repair-20260915
   cancel-in-progress: false
 
 jobs:
@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     steps:
-      - name: Check out exact staged branch
+      - name: Check out exact repair branch
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           fetch-depth: 0
@@ -29,7 +29,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$GITHUB_REF_NAME" = 'hardening/canonical-no-shim-20260910'
+          test "$GITHUB_REF_NAME" = 'system-contract/fix/direct-authority'
           echo "START_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
 
       - name: Set up Python 3.13
@@ -47,12 +47,54 @@ jobs:
         run: |
           set -euo pipefail
           test -f .github/direct-contract-migration-v2.py
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('.github/direct-contract-migration-v2.py')
+          text = path.read_text(encoding='utf-8')
+          old = '''    if victim not in unavailable:
+              unavailable.append(victim)
+          '''
+          new = '''    if victim not in unavailable:
+              unavailable[victim] = "test fixture intentionally unavailable"
+          '''
+          if old not in text:
+              raise SystemExit('expected unavailable_specs test mutation was not found')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
           python .github/direct-contract-migration-v2.py
           rm -f .github/direct-contract-migration-v2.py
           rm -f .github/workflows/review-canonical-source.yml
           rm -f .github/workflows/canonical-representation-v2.yml
           rm -f .github/canonical_bootstrap_v2.py
           rm -f .github/workflows/temporary-canonical-main-finalizer-20260909.yml
+
+      - name: Repair remaining direct-contract documentation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('LOCAL_STORAGE_AND_ROLLOUT_LAYOUT.md')
+          text = path.read_text(encoding='utf-8')
+          old = '''Generated reports expose the contract in two places:
+
+          ```text
+          report.local_storage_schema
+          report.evolution_contract.extractors["extractor.local_storage"].data
+          ```
+          '''
+          new = '''Generated reports expose the contract once:
+
+          ```text
+          report.system_contract.model.extractors["extractor.local_storage"].data
+          ```
+          '''
+          if old not in text:
+              raise SystemExit('expected duplicate local-storage report paths were not found')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
 
       - name: Enforce no compatibility shim or transitional publisher
         shell: bash
@@ -144,7 +186,7 @@ jobs:
             --schema-output "$RUNNER_TEMP/no-shim-proof/config-schema.json" \
             --graph-output "$RUNNER_TEMP/no-shim-proof/config-surface-graph.json"
 
-      - name: Publish only the proved hardening branch
+      - name: Publish only the proved repair branch
         shell: bash
         run: |
           set -euo pipefail
@@ -155,7 +197,7 @@ jobs:
           test -n "$tested_tree"
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git commit -m 'fix: enforce one direct canonical contract without shims'
+          git commit -m 'fix(system-contract): enforce direct authority'
           git fetch --no-tags origin "refs/heads/$GITHUB_REF_NAME"
           test "$(git rev-parse FETCH_HEAD)" = "$START_SHA"
           git push origin "HEAD:refs/heads/$GITHUB_REF_NAME"
@@ -167,7 +209,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
-          name: canonical-no-shim-hardening-proof
+          name: direct-authority-repair-proof
           path: ${{ runner.temp }}/no-shim-proof
           if-no-files-found: warn
           retention-days: 30
