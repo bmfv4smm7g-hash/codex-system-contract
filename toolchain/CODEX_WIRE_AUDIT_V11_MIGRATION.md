@@ -48,6 +48,8 @@ Prefer a registry overlay for a temporary or downstream path difference. Once an
 
 Do not compare pretty JSON text. Compare `evolution_contract` or use `semantic-diff.json`. Presentation wording, source line movement, and object order are intentionally excluded from stable semantic IDs.
 
-## Known transition limitation
+## Current migration state
 
-Only turn-metadata construction has moved to canonical extraction. v10 still constructs the other machine entities from its legacy report representation. The `migration.legacy_machine_reconstruction_remaining` field remains true until that work is complete.
+The static machine model is now composed from canonical, source-derived domain extractors. The frozen v10 report renderer remains available only for consumer compatibility and is excluded from `system_contract`; `migration.legacy_machine_reconstruction_remaining` is therefore `false` for the canonical model.
+
+This does **not** make static source evidence equivalent to runtime observation. `codex_wire_full` still requires the `runtime_conformance` proof dimension and its bounded runtime scenarios. Until genuine report-bound observations are supplied, CI may continue using the transition profile rather than claiming full observed conformance.
