@@ -268,6 +268,16 @@ def from_legacy_maps(
         ("source_spec.extra.policy_turn_context", "policy_turn_context", "codex-rs/core/src/session/turn_context.rs", ("fn approval_policy", "fn permission_profile", "fn allow_prefix_rules")),
         ("source_spec.extra.policy_exec_policy", "policy_exec_policy", "codex-rs/core/src/exec_policy.rs", ("ExecApprovalRequest", "prompt_is_rejected_by_policy", "Decision::Forbidden")),
     )
+    plugin_specs = (
+        ("source_spec.extra.plugin_model", "plugin_model", "codex-rs/plugin/src/lib.rs", ("PluginCapabilitySummary", "AppDeclaration", "PluginTelemetryMetadata")),
+        ("source_spec.extra.plugin_load_outcome", "plugin_load_outcome", "codex-rs/plugin/src/load_outcome.rs", ("LoadedPlugin", "PluginLoadOutcome", "effective_plugin_skill_roots")),
+        ("source_spec.extra.plugin_manifest", "plugin_manifest", "codex-rs/core-plugins/src/manifest.rs", ("PluginManifestFormat", "RawPluginManifest", "load_plugin_manifest_with_format")),
+        ("source_spec.extra.plugin_loader", "plugin_loader", "codex-rs/core-plugins/src/loader.rs", ("load_plugins_from_layer_stack", "PluginLoadScope", "load_plugin_skill_inventory")),
+        ("source_spec.extra.plugin_manager", "plugin_manager", "codex-rs/core-plugins/src/manager.rs", ("PluginsConfigInput", "plugins_for_config", "plugin_skill_snapshots_for_config")),
+        ("source_spec.extra.plugin_mentions", "plugin_mentions", "codex-rs/core/src/plugins/mentions.rs", ("collect_explicit_plugin_mentions", "collect_explicit_plugin_ids", "PLUGIN_TEXT_MENTION_SIGIL")),
+        ("source_spec.extra.plugin_injection", "plugin_injection", "codex-rs/core/src/plugins/injection.rs", ("build_plugin_injections", "PluginInstructions::new", "CODEX_APPS_MCP_SERVER_NAME")),
+        ("source_spec.extra.plugin_render", "plugin_render", "codex-rs/core/src/plugins/render.rs", ("render_explicit_plugin_instructions", "MAX_EXPLICIT_PLUGIN_INSTRUCTIONS_BYTES")),
+    )
     specs.append(SourceSpec(
         id="source_spec.extra.generated_config_schema",
         legacy_key="generated_config_schema",
@@ -343,5 +353,19 @@ def from_legacy_maps(
             roles=("execution_policy",),
             expected_symbols=tuple(symbols),
             extractor_ids=("extractor.execution_policy",),
+        ))
+    existing_ids = {spec.id for spec in specs}
+    for spec_id, legacy_key, path, symbols in plugin_specs:
+        if spec_id in existing_ids:
+            continue
+        specs.append(SourceSpec(
+            id=spec_id,
+            legacy_key=legacy_key,
+            group=SourceGroup.EXTRA,
+            path_candidates=(path,),
+            required=False,
+            roles=("plugin_runtime",),
+            expected_symbols=tuple(symbols),
+            extractor_ids=("extractor.plugin_runtime",),
         ))
     return SourceRegistry(specs)

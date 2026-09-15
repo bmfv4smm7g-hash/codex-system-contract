@@ -1,11 +1,11 @@
 {
   "counts": {
     "base": 16,
-    "extra": 75,
-    "optional": 101,
+    "extra": 83,
+    "optional": 109,
     "required": 16,
     "surface": 26,
-    "total": 117
+    "total": 125
   },
   "schema_version": "1.0.0",
   "sources": {
@@ -1141,6 +1141,165 @@
       "required": false,
       "roles": [
         "context_management"
+      ]
+    },
+    "source_spec.extra.plugin_injection": {
+      "expected_symbols": [
+        "build_plugin_injections",
+        "PluginInstructions::new",
+        "CODEX_APPS_MCP_SERVER_NAME"
+      ],
+      "extractor_ids": [
+        "extractor.plugin_runtime"
+      ],
+      "group": "extra",
+      "id": "source_spec.extra.plugin_injection",
+      "legacy_key": "plugin_injection",
+      "path_candidates": [
+        "codex-rs/core/src/plugins/injection.rs"
+      ],
+      "required": false,
+      "roles": [
+        "plugin_runtime"
+      ]
+    },
+    "source_spec.extra.plugin_load_outcome": {
+      "expected_symbols": [
+        "LoadedPlugin",
+        "PluginLoadOutcome",
+        "effective_plugin_skill_roots"
+      ],
+      "extractor_ids": [
+        "extractor.plugin_runtime"
+      ],
+      "group": "extra",
+      "id": "source_spec.extra.plugin_load_outcome",
+      "legacy_key": "plugin_load_outcome",
+      "path_candidates": [
+        "codex-rs/plugin/src/load_outcome.rs"
+      ],
+      "required": false,
+      "roles": [
+        "plugin_runtime"
+      ]
+    },
+    "source_spec.extra.plugin_loader": {
+      "expected_symbols": [
+        "load_plugins_from_layer_stack",
+        "PluginLoadScope",
+        "load_plugin_skill_inventory"
+      ],
+      "extractor_ids": [
+        "extractor.plugin_runtime"
+      ],
+      "group": "extra",
+      "id": "source_spec.extra.plugin_loader",
+      "legacy_key": "plugin_loader",
+      "path_candidates": [
+        "codex-rs/core-plugins/src/loader.rs"
+      ],
+      "required": false,
+      "roles": [
+        "plugin_runtime"
+      ]
+    },
+    "source_spec.extra.plugin_manager": {
+      "expected_symbols": [
+        "PluginsConfigInput",
+        "plugins_for_config",
+        "plugin_skill_snapshots_for_config"
+      ],
+      "extractor_ids": [
+        "extractor.plugin_runtime"
+      ],
+      "group": "extra",
+      "id": "source_spec.extra.plugin_manager",
+      "legacy_key": "plugin_manager",
+      "path_candidates": [
+        "codex-rs/core-plugins/src/manager.rs"
+      ],
+      "required": false,
+      "roles": [
+        "plugin_runtime"
+      ]
+    },
+    "source_spec.extra.plugin_manifest": {
+      "expected_symbols": [
+        "PluginManifestFormat",
+        "RawPluginManifest",
+        "load_plugin_manifest_with_format"
+      ],
+      "extractor_ids": [
+        "extractor.plugin_runtime"
+      ],
+      "group": "extra",
+      "id": "source_spec.extra.plugin_manifest",
+      "legacy_key": "plugin_manifest",
+      "path_candidates": [
+        "codex-rs/core-plugins/src/manifest.rs"
+      ],
+      "required": false,
+      "roles": [
+        "plugin_runtime"
+      ]
+    },
+    "source_spec.extra.plugin_mentions": {
+      "expected_symbols": [
+        "collect_explicit_plugin_mentions",
+        "collect_explicit_plugin_ids",
+        "PLUGIN_TEXT_MENTION_SIGIL"
+      ],
+      "extractor_ids": [
+        "extractor.plugin_runtime"
+      ],
+      "group": "extra",
+      "id": "source_spec.extra.plugin_mentions",
+      "legacy_key": "plugin_mentions",
+      "path_candidates": [
+        "codex-rs/core/src/plugins/mentions.rs"
+      ],
+      "required": false,
+      "roles": [
+        "plugin_runtime"
+      ]
+    },
+    "source_spec.extra.plugin_model": {
+      "expected_symbols": [
+        "PluginCapabilitySummary",
+        "AppDeclaration",
+        "PluginTelemetryMetadata"
+      ],
+      "extractor_ids": [
+        "extractor.plugin_runtime"
+      ],
+      "group": "extra",
+      "id": "source_spec.extra.plugin_model",
+      "legacy_key": "plugin_model",
+      "path_candidates": [
+        "codex-rs/plugin/src/lib.rs"
+      ],
+      "required": false,
+      "roles": [
+        "plugin_runtime"
+      ]
+    },
+    "source_spec.extra.plugin_render": {
+      "expected_symbols": [
+        "render_explicit_plugin_instructions",
+        "MAX_EXPLICIT_PLUGIN_INSTRUCTIONS_BYTES"
+      ],
+      "extractor_ids": [
+        "extractor.plugin_runtime"
+      ],
+      "group": "extra",
+      "id": "source_spec.extra.plugin_render",
+      "legacy_key": "plugin_render",
+      "path_candidates": [
+        "codex-rs/core/src/plugins/render.rs"
+      ],
+      "required": false,
+      "roles": [
+        "plugin_runtime"
       ]
     },
     "source_spec.extra.policy_config_resolution": {
