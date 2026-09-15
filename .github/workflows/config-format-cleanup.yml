@@ -25,39 +25,26 @@ jobs:
           from pathlib import Path
           path = Path('codex_wire_audit/extractors/config_effects.py')
           text = path.read_text()
-          old = '''        complete = _validate_semantics(
-    diagnostics,
-    catalog=catalog,
-    registry=registry,
-    schema_policy=schema_policy,
-    crosswalk=crosswalk,
-    missing_effect_paths=missing_effect_paths,
-    missing_effect_anchors=missing_effect_anchors,
-    missing_legacy=missing_legacy,
-    effect_sources=effect_sources,
-    schema_source=schema_source,
-    registry_source=registry_source,
-    schema_generator_source=schema_generator_source,
-)
-'''
-          new = '''        complete = _validate_semantics(
-            diagnostics,
-            catalog=catalog,
-            registry=registry,
-            schema_policy=schema_policy,
-            crosswalk=crosswalk,
-            missing_effect_paths=missing_effect_paths,
-            missing_effect_anchors=missing_effect_anchors,
-            missing_legacy=missing_legacy,
-            effect_sources=effect_sources,
-            schema_source=schema_source,
-            registry_source=registry_source,
-            schema_generator_source=schema_generator_source,
-        )
-'''
-          if old not in text:
-              raise SystemExit('validation call formatting marker missing')
-          text = text.replace(old, new, 1).replace('\n\n\ndef _validate_semantics(', '\n\ndef _validate_semantics(', 1)
+          start = text.index('        complete = _validate_semantics(\n')
+          end = text.index('\n\n        data: dict[str, Any] = {', start)
+          call = (
+              '        complete = _validate_semantics(\n'
+              '            diagnostics,\n'
+              '            catalog=catalog,\n'
+              '            registry=registry,\n'
+              '            schema_policy=schema_policy,\n'
+              '            crosswalk=crosswalk,\n'
+              '            missing_effect_paths=missing_effect_paths,\n'
+              '            missing_effect_anchors=missing_effect_anchors,\n'
+              '            missing_legacy=missing_legacy,\n'
+              '            effect_sources=effect_sources,\n'
+              '            schema_source=schema_source,\n'
+              '            registry_source=registry_source,\n'
+              '            schema_generator_source=schema_generator_source,\n'
+              '        )'
+          )
+          text = text[:start] + call + text[end:]
+          text = text.replace('\n\n\ndef _validate_semantics(', '\n\ndef _validate_semantics(', 1)
           path.write_text(text)
           PY
           python -m py_compile codex_wire_audit/extractors/config_effects.py
