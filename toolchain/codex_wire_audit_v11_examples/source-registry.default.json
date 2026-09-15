@@ -1,11 +1,11 @@
 {
   "counts": {
     "base": 16,
-    "extra": 83,
-    "optional": 109,
+    "extra": 89,
+    "optional": 115,
     "required": 16,
     "surface": 26,
-    "total": 125
+    "total": 131
   },
   "schema_version": "1.0.0",
   "sources": {
@@ -445,6 +445,126 @@
       "roles": [
         "legacy_extra",
         "config_surface_support"
+      ]
+    },
+    "source_spec.extra.environment_manager": {
+      "expected_symbols": [
+        "EnvironmentManager",
+        "EnvironmentObservedStatus",
+        "default_environment_ids"
+      ],
+      "extractor_ids": [
+        "extractor.execution_environment"
+      ],
+      "group": "extra",
+      "id": "source_spec.extra.environment_manager",
+      "legacy_key": "environment_manager",
+      "path_candidates": [
+        "codex-rs/exec-server/src/environment.rs"
+      ],
+      "required": false,
+      "roles": [
+        "execution_environment"
+      ]
+    },
+    "source_spec.extra.environment_selection": {
+      "expected_symbols": [
+        "EnvironmentConfigOrigin",
+        "ThreadEnvironments",
+        "default_thread_environment_selections"
+      ],
+      "extractor_ids": [
+        "extractor.execution_environment"
+      ],
+      "group": "extra",
+      "id": "source_spec.extra.environment_selection",
+      "legacy_key": "environment_selection",
+      "path_candidates": [
+        "codex-rs/core/src/environment_selection.rs"
+      ],
+      "required": false,
+      "roles": [
+        "execution_environment"
+      ]
+    },
+    "source_spec.extra.environment_shell_builder": {
+      "expected_symbols": [
+        "NON_INHERITABLE_ENV_VARS",
+        "create_env_from_vars",
+        "CODEX_THREAD_ID_ENV_VAR"
+      ],
+      "extractor_ids": [
+        "extractor.execution_environment"
+      ],
+      "group": "extra",
+      "id": "source_spec.extra.environment_shell_builder",
+      "legacy_key": "environment_shell_builder",
+      "path_candidates": [
+        "codex-rs/protocol/src/shell_environment.rs"
+      ],
+      "required": false,
+      "roles": [
+        "execution_environment"
+      ]
+    },
+    "source_spec.extra.environment_shell_policy": {
+      "expected_symbols": [
+        "ShellEnvironmentPolicyInherit",
+        "ShellEnvironmentPolicy",
+        "use_profile"
+      ],
+      "extractor_ids": [
+        "extractor.execution_environment"
+      ],
+      "group": "extra",
+      "id": "source_spec.extra.environment_shell_policy",
+      "legacy_key": "environment_shell_policy",
+      "path_candidates": [
+        "codex-rs/protocol/src/config_types.rs"
+      ],
+      "required": false,
+      "roles": [
+        "execution_environment"
+      ]
+    },
+    "source_spec.extra.environment_shell_snapshot": {
+      "expected_symbols": [
+        "ShellSnapshot",
+        "SNAPSHOT_TIMEOUT",
+        "cleanup_stale_snapshots"
+      ],
+      "extractor_ids": [
+        "extractor.execution_environment"
+      ],
+      "group": "extra",
+      "id": "source_spec.extra.environment_shell_snapshot",
+      "legacy_key": "environment_shell_snapshot",
+      "path_candidates": [
+        "codex-rs/core/src/shell_snapshot.rs"
+      ],
+      "required": false,
+      "roles": [
+        "execution_environment"
+      ]
+    },
+    "source_spec.extra.environment_turn_context": {
+      "expected_symbols": [
+        "TurnEnvironment",
+        "shell_environment_policy",
+        "workspace_roots"
+      ],
+      "extractor_ids": [
+        "extractor.execution_environment"
+      ],
+      "group": "extra",
+      "id": "source_spec.extra.environment_turn_context",
+      "legacy_key": "environment_turn_context",
+      "path_candidates": [
+        "codex-rs/core/src/session/turn_context.rs"
+      ],
+      "required": false,
+      "roles": [
+        "execution_environment"
       ]
     },
     "source_spec.extra.feature_configs": {

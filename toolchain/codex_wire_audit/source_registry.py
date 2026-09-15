@@ -302,6 +302,14 @@ def from_legacy_maps(
         ("source_spec.extra.plugin_injection", "plugin_injection", "codex-rs/core/src/plugins/injection.rs", ("build_plugin_injections", "PluginInstructions::new", "CODEX_APPS_MCP_SERVER_NAME")),
         ("source_spec.extra.plugin_render", "plugin_render", "codex-rs/core/src/plugins/render.rs", ("render_explicit_plugin_instructions", "MAX_EXPLICIT_PLUGIN_INSTRUCTIONS_BYTES")),
     )
+    environment_specs = (
+        ("source_spec.extra.environment_shell_policy", "environment_shell_policy", "codex-rs/protocol/src/config_types.rs", ("ShellEnvironmentPolicyInherit", "ShellEnvironmentPolicy", "use_profile")),
+        ("source_spec.extra.environment_shell_builder", "environment_shell_builder", "codex-rs/protocol/src/shell_environment.rs", ("NON_INHERITABLE_ENV_VARS", "create_env_from_vars", "CODEX_THREAD_ID_ENV_VAR")),
+        ("source_spec.extra.environment_selection", "environment_selection", "codex-rs/core/src/environment_selection.rs", ("EnvironmentConfigOrigin", "ThreadEnvironments", "default_thread_environment_selections")),
+        ("source_spec.extra.environment_shell_snapshot", "environment_shell_snapshot", "codex-rs/core/src/shell_snapshot.rs", ("ShellSnapshot", "SNAPSHOT_TIMEOUT", "cleanup_stale_snapshots")),
+        ("source_spec.extra.environment_manager", "environment_manager", "codex-rs/exec-server/src/environment.rs", ("EnvironmentManager", "EnvironmentObservedStatus", "default_environment_ids")),
+        ("source_spec.extra.environment_turn_context", "environment_turn_context", "codex-rs/core/src/session/turn_context.rs", ("TurnEnvironment", "shell_environment_policy", "workspace_roots")),
+    )
     specs.append(SourceSpec(
         id="source_spec.extra.generated_config_schema",
         legacy_key="generated_config_schema",
@@ -336,5 +344,11 @@ def from_legacy_maps(
     )
     _append_optional_specs(
         specs, plugin_specs, role="plugin_runtime", extractor_id="extractor.plugin_runtime"
+    )
+    _append_optional_specs(
+        specs,
+        environment_specs,
+        role="execution_environment",
+        extractor_id="extractor.execution_environment",
     )
     return SourceRegistry(specs)

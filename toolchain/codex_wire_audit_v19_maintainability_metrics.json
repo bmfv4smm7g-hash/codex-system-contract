@@ -1,10 +1,10 @@
 {
   "active_implementation": {
-    "function_count": 569,
+    "function_count": 581,
     "functions_over_200_lines": [],
     "functions_over_complexity_45": [],
     "internal_import_cycles": [],
-    "internal_import_edge_count": 190,
+    "internal_import_edge_count": 194,
     "largest_function": {
       "cyclomatic_complexity": 39,
       "file": "codex_wire_audit/proof_gate.py",
@@ -42,18 +42,18 @@
         "start_line": 93
       },
       {
+        "cyclomatic_complexity": 14,
+        "file": "codex_wire_audit/source_registry.py",
+        "line_count": 172,
+        "qualified_name": "from_legacy_maps",
+        "start_line": 183
+      },
+      {
         "cyclomatic_complexity": 17,
         "file": "codex_wire_audit/extractors/context_management.py",
         "line_count": 170,
         "qualified_name": "_history_notes",
         "start_line": 116
-      },
-      {
-        "cyclomatic_complexity": 14,
-        "file": "codex_wire_audit/source_registry.py",
-        "line_count": 158,
-        "qualified_name": "from_legacy_maps",
-        "start_line": 183
       },
       {
         "cyclomatic_complexity": 30,
@@ -203,7 +203,7 @@
       }
     ],
     "maximum_module_fan_out": 10,
-    "module_count": 73,
+    "module_count": 74,
     "modules_over_600_lines": [],
     "modules_over_fan_out_10": [],
     "most_complex_function": {
@@ -213,15 +213,15 @@
       "qualified_name": "verify_git_source",
       "start_line": 75
     },
-    "physical_line_count": 16350,
-    "source_sha256": "424f0b03bfc6a7ba85854905ac1b942e8ecddaa4affb9075cb347f151d5a460f"
+    "physical_line_count": 16737,
+    "source_sha256": "2a19af0b392058f9c5f8904f62a272703712cc049687b5f76d36542f11dca64b"
   },
   "active_package": {
-    "function_count": 434,
+    "function_count": 446,
     "functions_over_200_lines": [],
     "functions_over_complexity_45": [],
     "internal_import_cycles": [],
-    "internal_import_edge_count": 149,
+    "internal_import_edge_count": 153,
     "largest_function": {
       "cyclomatic_complexity": 39,
       "file": "codex_wire_audit/proof_gate.py",
@@ -252,18 +252,18 @@
         "start_line": 92
       },
       {
+        "cyclomatic_complexity": 14,
+        "file": "codex_wire_audit/source_registry.py",
+        "line_count": 172,
+        "qualified_name": "from_legacy_maps",
+        "start_line": 183
+      },
+      {
         "cyclomatic_complexity": 17,
         "file": "codex_wire_audit/extractors/context_management.py",
         "line_count": 170,
         "qualified_name": "_history_notes",
         "start_line": 116
-      },
-      {
-        "cyclomatic_complexity": 14,
-        "file": "codex_wire_audit/source_registry.py",
-        "line_count": 158,
-        "qualified_name": "from_legacy_maps",
-        "start_line": 183
       },
       {
         "cyclomatic_complexity": 30,
@@ -407,20 +407,20 @@
         "line_count": 397
       },
       {
+        "file": "codex_wire_audit/extractors/execution_environment.py",
+        "line_count": 372
+      },
+      {
         "file": "codex_wire_audit/extractors/plugin_runtime.py",
         "line_count": 354
       },
       {
-        "file": "codex_wire_audit/rust_syntax.py",
-        "line_count": 341
-      },
-      {
         "file": "codex_wire_audit/source_registry.py",
-        "line_count": 340
+        "line_count": 354
       }
     ],
     "maximum_module_fan_out": 10,
-    "module_count": 61,
+    "module_count": 62,
     "modules_over_600_lines": [],
     "modules_over_fan_out_10": [],
     "most_complex_function": {
@@ -430,8 +430,8 @@
       "qualified_name": "verify_git_source",
       "start_line": 75
     },
-    "physical_line_count": 13003,
-    "source_sha256": "c7585d6bd67831045f6fcd2576fc1c6868df8240100465427895f57c9824f320"
+    "physical_line_count": 13390,
+    "source_sha256": "dbe61d953be2cc82d09b9d70f769a31c3a5adfc7a5dd8f69e0bd500549e4e8e3"
   },
   "active_release_tools": {
     "function_count": 135,
@@ -678,13 +678,13 @@
     "metadata_history_states": 19,
     "metadata_history_transitions": 9,
     "metadata_history_versions": 10,
-    "proof_schema_templates": 11,
-    "registered_optional_sources": 109,
+    "proof_schema_templates": 12,
+    "registered_optional_sources": 115,
     "registered_required_sources": 16,
-    "registered_source_specs": 125,
-    "regression_test_methods": 238,
+    "registered_source_specs": 131,
+    "regression_test_methods": 243,
     "standalone_release_schemas": 1,
-    "strict_schema_templates": 20
+    "strict_schema_templates": 21
   },
   "metrics_schema_version": "3.0.0",
   "release": {

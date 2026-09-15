@@ -81,7 +81,7 @@ def _snapshot(*, omit: str | None = None, break_scrub: bool = False) -> SourceSn
     pub async fn prepare_from_codex_home
     pub async fn prepare_from_env
     pub fn default_environment_ids
-    environment id `local` is reserved
+    environment id `{LOCAL_ENVIRONMENT_ID}` is reserved for EnvironmentManager
     is duplicated
     default environment `{environment_id}` is not configured
     CODEX_EXEC_SERVER_URL=none

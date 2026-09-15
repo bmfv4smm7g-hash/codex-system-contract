@@ -204,7 +204,7 @@ def _manager(
         ("ENV_HOME_DISCOVERY_MISSING", "pub async fn prepare_from_codex_home"),
         ("ENV_ENV_DISCOVERY_MISSING", "pub async fn prepare_from_env"),
         ("ENV_DEFAULT_IDS_MISSING", "pub fn default_environment_ids"),
-        ("ENV_LOCAL_RESERVED_MISSING", "environment id `local` is reserved"),
+        ("ENV_LOCAL_RESERVED_MISSING", "is reserved for EnvironmentManager"),
         ("ENV_DUPLICATE_ID_REJECTION_MISSING", "is duplicated"),
         ("ENV_INVALID_DEFAULT_REJECTION_MISSING", "default environment `{environment_id}` is not configured"),
         ("ENV_DISABLE_SENTINEL_MISSING", "CODEX_EXEC_SERVER_URL=none"),
