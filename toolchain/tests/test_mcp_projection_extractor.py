@@ -89,7 +89,10 @@ def test_default_registry_assigns_mcp_sources_to_mcp_domain():
         if "extractor.mcp_projection" in spec.extractor_ids
     }
     assert observed == expected
-    assert all(registry.get(spec_id).roles == ("mcp_projection",) for spec_id in expected)
+    assert all("mcp_projection" in registry.get(spec_id).roles for spec_id in expected)
+    assert "legacy_extra" in registry.get("source_spec.extra.mcp_catalog").roles
+    assert "legacy_extra" in registry.get("source_spec.extra.mcp_runtime").roles
+    assert "legacy_extra" in registry.get("source_spec.extra.mcp_handler").roles
 
 
 def test_mcp_projection_preserves_raw_execution_identity():
