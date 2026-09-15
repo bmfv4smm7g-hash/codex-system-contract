@@ -12,6 +12,43 @@ def replace_once(path: str, old: str, new: str) -> None:
     file.write_text(text.replace(old, new, 1), encoding="utf-8")
 
 
+def edit_profile(
+    path: str,
+    *,
+    profile_id: str,
+    old_description: str,
+    new_description: str,
+    extractor: str,
+) -> None:
+    file = Path(path)
+    text = file.read_text(encoding="utf-8")
+    id_marker = f'      "id": "{profile_id}",'
+    if text.count(id_marker) != 1:
+        raise SystemExit(f"{path}: profile id is not unique: {profile_id}")
+    id_pos = text.index(id_marker)
+    start = text.rfind("    {\n", 0, id_pos)
+    end_marker = "\n    },"
+    end = text.find(end_marker, id_pos)
+    if start < 0 or end < 0:
+        raise SystemExit(f"{path}: cannot isolate profile object: {profile_id}")
+    end += len(end_marker)
+    block = text[start:end]
+    if block.count(old_description) != 1:
+        raise SystemExit(f"{path}: description marker drifted for {profile_id}")
+    tail = '        "extractor.execution_policy"\n      ]'
+    if block.count(tail) != 1:
+        raise SystemExit(f"{path}: extractor tail drifted for {profile_id}")
+    block = block.replace(old_description, new_description, 1)
+    block = block.replace(
+        tail,
+        '        "extractor.execution_policy",\n'
+        f'        "{extractor}"\n'
+        "      ]",
+        1,
+    )
+    file.write_text(text[:start] + block + text[end:], encoding="utf-8")
+
+
 registry = "toolchain/codex_wire_audit/source_registry.py"
 generated_marker = '''    specs.append(SourceSpec(
         id="source_spec.extra.generated_config_schema",'''
@@ -82,25 +119,19 @@ replace_once(
 )
 
 profiles = "toolchain/codex_wire_audit/coverage_profiles.v3.json"
-replace_once(
+edit_profile(
     profiles,
-    "Transition profile: canonical generated config schema, config-to-surface graph, turn metadata, context management, prompt/context composition, and execution authority; remaining protocol families may still use the frozen legacy adapter.",
-    "Transition profile: canonical generated config schema, config-to-surface graph, turn metadata, context management, prompt/context composition, execution authority, and plugin runtime capabilities; remaining protocol families may still use the frozen legacy adapter.",
+    profile_id="hybrid_v19",
+    old_description="Transition profile: canonical generated config schema, config-to-surface graph, turn metadata, context management, prompt/context composition, and execution authority; remaining protocol families may still use the frozen legacy adapter.",
+    new_description="Transition profile: canonical generated config schema, config-to-surface graph, turn metadata, context management, prompt/context composition, execution authority, and plugin runtime capabilities; remaining protocol families may still use the frozen legacy adapter.",
+    extractor="extractor.plugin_runtime",
 )
-replace_once(
+edit_profile(
     profiles,
-    '        "extractor.prompt_context",\n        "extractor.execution_policy"\n      ],',
-    '        "extractor.prompt_context",\n        "extractor.execution_policy",\n        "extractor.plugin_runtime"\n      ],',
-)
-replace_once(
-    profiles,
-    "Repository-wide canonical wire, local-storage, prompt-context, and execution-policy proof. Legacy reconstruction cannot satisfy it, and historical metadata transitions and runtime conformance are part of the proof surface.",
-    "Repository-wide canonical wire, local-storage, prompt-context, execution-policy, and plugin-runtime proof. Legacy reconstruction cannot satisfy it, and historical metadata transitions and runtime conformance are part of the proof surface.",
-)
-replace_once(
-    profiles,
-    '        "extractor.prompt_context",\n        "extractor.execution_policy"\n      ],\n      "required_history_keys":',
-    '        "extractor.prompt_context",\n        "extractor.execution_policy",\n        "extractor.plugin_runtime"\n      ],\n      "required_history_keys":',
+    profile_id="codex_wire_full",
+    old_description="Repository-wide canonical wire, local-storage, prompt-context, and execution-policy proof. Legacy reconstruction cannot satisfy it, and historical metadata transitions and runtime conformance are part of the proof surface.",
+    new_description="Repository-wide canonical wire, local-storage, prompt-context, execution-policy, and plugin-runtime proof. Legacy reconstruction cannot satisfy it, and historical metadata transitions and runtime conformance are part of the proof surface.",
+    extractor="extractor.plugin_runtime",
 )
 fixture_marker = '''    {
       "allow_legacy_reconstruction": true,
