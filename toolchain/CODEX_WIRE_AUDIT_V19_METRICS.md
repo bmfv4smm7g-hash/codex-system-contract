@@ -16,7 +16,7 @@ Largest combined module: **`codex_wire_audit/metadata_history.py`** (581 lines).
 
 ## Generated maintenance assets
 
-- Source registry entries: **106** (16 required, 90 optional).
+- Source registry entries: **110** (16 required, 94 optional).
 - Strict schemas: **18**, including **1** release-spec schema.
 - Metadata history: **7 keys**, **19 states**, **10 versions**, **9 transitions**.
 - Regression test methods: **228**.
