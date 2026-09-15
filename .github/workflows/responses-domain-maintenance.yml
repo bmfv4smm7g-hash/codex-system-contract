@@ -32,19 +32,23 @@ jobs:
 
           registry = Path('codex_wire_audit/source_registry.py')
           text = registry.read_text()
-          insert_before = '''    specs.append(SourceSpec(\n        id="source_spec.extra.generated_config_schema",'''
-          block = '''    responses_request_specs = (\n        ("source_spec.base.common", "common", "codex-rs/codex-api/src/common.rs", ("ResponsesApiRequest", "ResponseCreateWsRequest", "ResponsesWsRequest")),\n        ("source_spec.base.core", "core", "codex-rs/core/src/client.rs", ("build_responses_request", "responses_request_properties_match", "build_ws_client_metadata")),\n        ("source_spec.base.http", "http", "codex-rs/codex-api/src/endpoint/responses.rs", ("ResponsesEndpoint", "ResponsesClient", "stream_request")),\n        ("source_spec.base.ws", "ws", "codex-rs/codex-api/src/endpoint/responses_websocket.rs", ("ResponsesWebsocketConnection", "ResponsesWebsocketClient", "stream_request")),\n    )\n    responses_lite_specs = (\n        ("source_spec.base.core", "core", "codex-rs/core/src/client.rs", ("use_responses_lite", "ResponseItem::AdditionalTools", "add_responses_lite_header")),\n    )\n    response_event_specs = (\n        ("source_spec.base.common", "common", "codex-rs/codex-api/src/common.rs", ("ResponseEvent",)),\n        ("source_spec.base.response_sse", "response_sse", "codex-rs/codex-api/src/sse/responses.rs", ("ResponsesStreamEvent", "process_responses_event", "spawn_response_stream")),\n        ("source_spec.base.ws", "ws", "codex-rs/codex-api/src/endpoint/responses_websocket.rs", ("process_responses_event", "run_websocket_response_stream")),\n    )\n'''
-          if 'responses_request_specs = (' not in text:
-              if insert_before not in text:
-                  raise SystemExit('source registry insertion marker missing')
-              text = text.replace(insert_before, block + insert_before, 1)
+          local_mcp = '''    mcp_specs = (\n        ("source_spec.extra.mcp_catalog", "mcp_catalog", "codex-rs/codex-mcp/src/catalog.rs", ("McpServerSource", "McpCatalogBuilder", "ResolvedMcpCatalog")),\n        ("source_spec.extra.mcp_runtime", "mcp_runtime", "codex-rs/codex-mcp/src/mcp/mod.rs", ("McpConfig", "effective_mcp_servers", "ToolPluginProvenance")),\n        ("source_spec.extra.mcp_tools", "mcp_tools", "codex-rs/codex-mcp/src/tools.rs", ("ToolInfo", "ToolFilter", "normalize_tools_for_model_with_prefix")),\n        ("source_spec.extra.mcp_tool_exposure", "mcp_tool_exposure", "codex-rs/core/src/mcp_tool_exposure.rs", ("McpHandlerCache", "append_mcp_tools", "tool_is_model_visible")),\n        ("source_spec.extra.mcp_tool_plan", "mcp_tool_plan", "codex-rs/core/src/tools/spec_plan.rs", ("build_tool_router", "apply_mcp_tool_exposure_policy", "omit_tools_from")),\n        ("source_spec.extra.mcp_handler", "mcp_handler", "codex-rs/core/src/tools/handlers/mcp.rs", ("McpHandler", "prepare_mcp_call", "handle_mcp_tool_call")),\n    )\n'''
+          if local_mcp not in text:
+              raise SystemExit('local MCP source-spec block missing')
+          text = text.replace(local_mcp, '', 1)
+
+          helper_marker = '\n\ndef from_legacy_maps(\n'
+          module_block = '''\n\n_MCP_SPECS = (\n    ("source_spec.extra.mcp_catalog", "mcp_catalog", "codex-rs/codex-mcp/src/catalog.rs", ("McpServerSource", "McpCatalogBuilder", "ResolvedMcpCatalog")),\n    ("source_spec.extra.mcp_runtime", "mcp_runtime", "codex-rs/codex-mcp/src/mcp/mod.rs", ("McpConfig", "effective_mcp_servers", "ToolPluginProvenance")),\n    ("source_spec.extra.mcp_tools", "mcp_tools", "codex-rs/codex-mcp/src/tools.rs", ("ToolInfo", "ToolFilter", "normalize_tools_for_model_with_prefix")),\n    ("source_spec.extra.mcp_tool_exposure", "mcp_tool_exposure", "codex-rs/core/src/mcp_tool_exposure.rs", ("McpHandlerCache", "append_mcp_tools", "tool_is_model_visible")),\n    ("source_spec.extra.mcp_tool_plan", "mcp_tool_plan", "codex-rs/core/src/tools/spec_plan.rs", ("build_tool_router", "apply_mcp_tool_exposure_policy", "omit_tools_from")),\n    ("source_spec.extra.mcp_handler", "mcp_handler", "codex-rs/core/src/tools/handlers/mcp.rs", ("McpHandler", "prepare_mcp_call", "handle_mcp_tool_call")),\n)\n\n_RESPONSES_REQUEST_SPECS = (\n    ("source_spec.base.common", "common", "codex-rs/codex-api/src/common.rs", ("ResponsesApiRequest", "ResponseCreateWsRequest", "ResponsesWsRequest")),\n    ("source_spec.base.core", "core", "codex-rs/core/src/client.rs", ("build_responses_request", "responses_request_properties_match", "build_ws_client_metadata")),\n    ("source_spec.base.http", "http", "codex-rs/codex-api/src/endpoint/responses.rs", ("ResponsesEndpoint", "ResponsesClient", "stream_request")),\n    ("source_spec.base.ws", "ws", "codex-rs/codex-api/src/endpoint/responses_websocket.rs", ("ResponsesWebsocketConnection", "ResponsesWebsocketClient", "stream_request")),\n)\n\n_RESPONSES_LITE_SPECS = (\n    ("source_spec.base.core", "core", "codex-rs/core/src/client.rs", ("use_responses_lite", "ResponseItem::AdditionalTools", "add_responses_lite_header")),\n)\n\n_RESPONSE_EVENT_SPECS = (\n    ("source_spec.base.common", "common", "codex-rs/codex-api/src/common.rs", ("ResponseEvent",)),\n    ("source_spec.base.response_sse", "response_sse", "codex-rs/codex-api/src/sse/responses.rs", ("ResponsesStreamEvent", "process_responses_event", "spawn_response_stream")),\n    ("source_spec.base.ws", "ws", "codex-rs/codex-api/src/endpoint/responses_websocket.rs", ("process_responses_event", "run_websocket_response_stream")),\n)\n\ndef _merge_protocol_domain_specs(specs: list[SourceSpec]) -> None:\n    for rows, role, extractor_id in (\n        (_MCP_SPECS, "mcp_projection", "extractor.mcp_projection"),\n        (_RESPONSES_REQUEST_SPECS, "responses_request", "extractor.responses_request"),\n        (_RESPONSES_LITE_SPECS, "responses_lite", "extractor.responses_lite"),\n        (_RESPONSE_EVENT_SPECS, "response_events", "extractor.response_events"),\n    ):\n        _merge_optional_specs(specs, rows, role=role, extractor_id=extractor_id)\n'''
+          if '_RESPONSES_REQUEST_SPECS = (' not in text:
+              if helper_marker not in text:
+                  raise SystemExit('source registry helper insertion marker missing')
+              text = text.replace(helper_marker, module_block + helper_marker, 1)
 
           append_marker = '''    _merge_optional_specs(\n        specs,\n        mcp_specs,\n        role="mcp_projection",\n        extractor_id="extractor.mcp_projection",\n    )\n    return SourceRegistry(specs)'''
-          append_replacement = '''    _merge_optional_specs(\n        specs,\n        mcp_specs,\n        role="mcp_projection",\n        extractor_id="extractor.mcp_projection",\n    )\n    _merge_optional_specs(\n        specs,\n        responses_request_specs,\n        role="responses_request",\n        extractor_id="extractor.responses_request",\n    )\n    _merge_optional_specs(\n        specs,\n        responses_lite_specs,\n        role="responses_lite",\n        extractor_id="extractor.responses_lite",\n    )\n    _merge_optional_specs(\n        specs,\n        response_event_specs,\n        role="response_events",\n        extractor_id="extractor.response_events",\n    )\n    return SourceRegistry(specs)'''
-          if 'role="responses_request"' not in text:
-              if append_marker not in text:
-                  raise SystemExit('source registry append marker missing')
-              text = text.replace(append_marker, append_replacement, 1)
+          append_replacement = '''    _merge_protocol_domain_specs(specs)\n    return SourceRegistry(specs)'''
+          if append_marker not in text:
+              raise SystemExit('source registry MCP append marker missing')
+          text = text.replace(append_marker, append_replacement, 1)
           registry.write_text(text)
 
           init = Path('codex_wire_audit/extractors/__init__.py')
@@ -83,11 +87,6 @@ jobs:
           release_path = Path('codex_wire_audit/release_spec.v1.json')
           release = json.loads(release_path.read_text())
           claims = release['capability_claims']
-          responses_ids = [
-              'extractor.responses_request',
-              'extractor.responses_lite',
-              'extractor.response_events',
-          ]
           if not any(row['id'] == 'responses_protocol' for row in claims):
               claim = {
                   'extractor_ids': responses_ids,
