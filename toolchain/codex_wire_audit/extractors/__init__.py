@@ -11,6 +11,7 @@ from . import prompt_context as _prompt_context  # noqa: E402,F401
 from . import execution_policy as _execution_policy  # noqa: E402,F401
 from . import plugin_runtime as _plugin_runtime  # noqa: E402,F401
 from . import execution_environment as _execution_environment  # noqa: E402,F401
+from . import routing_transport as _routing_transport  # noqa: E402,F401
 
 __all__ = [
     "Extractor",
