@@ -1,0 +1,43 @@
+{
+  "$id": "https://schemas.codex-system-contract.invalid/plugin/plugin-runtime-semantics-v1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Codex plugin runtime capability semantics",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "schema_version",
+    "ownership",
+    "model",
+    "manifest",
+    "loading",
+    "activation",
+    "evidence",
+    "semantic_complete",
+    "semantic_digest"
+  ],
+  "properties": {
+    "$schema": {"const": "https://schemas.codex-system-contract.invalid/plugin/plugin-runtime-semantics-v1.schema.json"},
+    "schema_version": {"const": "1.0.0"},
+    "ownership": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["owns", "does_not_own"],
+      "properties": {
+        "owns": {"type": "array", "items": {"type": "string"}, "minItems": 6, "uniqueItems": true},
+        "does_not_own": {"type": "array", "items": {"type": "string"}, "minItems": 5, "uniqueItems": true}
+      }
+    },
+    "model": {"type": "object", "required": ["identity", "active_predicate", "capability_summary", "effective_views", "evidence"]},
+    "manifest": {"type": "object", "required": ["formats", "declared_capabilities", "agent_plugin_overlay", "resource_paths", "interface_surface", "evidence"]},
+    "loading": {"type": "object", "required": ["global_gate", "configured_inputs", "ordering", "excluded_plugins", "load_scopes", "remote_catalog_gate", "cache", "boundary", "evidence"]},
+    "activation": {"type": "object", "required": ["selection_identity", "text_sigil", "activation_projection", "visible_associations", "instruction_bound_bytes", "empty_projection", "placement_boundary", "evidence"]},
+    "evidence": {
+      "type": "object",
+      "minProperties": 8,
+      "additionalProperties": {"type": "object", "required": ["source_spec_id", "path", "sha256", "git_blob_sha", "symbol"]}
+    },
+    "semantic_complete": {"type": "boolean"},
+    "semantic_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}
