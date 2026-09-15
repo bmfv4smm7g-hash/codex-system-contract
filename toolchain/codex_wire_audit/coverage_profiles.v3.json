@@ -100,7 +100,7 @@
     },
     {
       "allow_legacy_reconstruction": true,
-      "description": "Transition profile: canonical generated config schema, config-to-surface graph, turn metadata, and context management; remaining protocol families may still use the frozen legacy adapter.",
+      "description": "Transition profile: canonical generated config schema, config-to-surface graph, turn metadata, context management, and prompt/context composition; remaining protocol families may still use the frozen legacy adapter.",
       "id": "hybrid_v19",
       "required_dimensions": [
         "schema",
@@ -112,7 +112,8 @@
       "required_extractors": [
         "extractor.turn_metadata",
         "extractor.context_management",
-        "extractor.config_effects"
+        "extractor.config_effects",
+        "extractor.prompt_context"
       ],
       "required_history_keys": [
         "key.turn_metadata.code_mode_tool_names",
@@ -205,7 +206,7 @@
     },
     {
       "allow_legacy_reconstruction": false,
-      "description": "Repository-wide canonical wire and local-storage proof. Legacy reconstruction cannot satisfy it, and historical metadata transitions and runtime conformance are part of the proof surface.",
+      "description": "Repository-wide canonical wire, local-storage, and prompt-context proof. Legacy reconstruction cannot satisfy it, and historical metadata transitions and runtime conformance are part of the proof surface.",
       "id": "codex_wire_full",
       "required_dimensions": [
         "schema",
@@ -225,7 +226,8 @@
         "extractor.config_effects",
         "extractor.local_storage",
         "extractor.app_server_rpc",
-        "extractor.context_management"
+        "extractor.context_management",
+        "extractor.prompt_context"
       ],
       "required_history_keys": [
         "key.turn_metadata.code_mode_tool_names",
@@ -317,6 +319,22 @@
       ],
       "required_extractors": [
         "extractor.local_storage"
+      ],
+      "required_history_keys": [],
+      "required_runtime_scenarios": [],
+      "version": "1.0.0"
+    },
+    {
+      "allow_legacy_reconstruction": false,
+      "description": "Focused source-derived prompt/context composition proof without claiming permission, environment, plugin-runtime, MCP, or routing semantics.",
+      "id": "prompt_context_only",
+      "required_dimensions": [
+        "schema",
+        "profile",
+        "provenance"
+      ],
+      "required_extractors": [
+        "extractor.prompt_context"
       ],
       "required_history_keys": [],
       "required_runtime_scenarios": [],

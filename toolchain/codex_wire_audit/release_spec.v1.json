@@ -168,6 +168,35 @@
       "status": "active_package"
     },
     {
+      "extractor_ids": [
+        "extractor.prompt_context"
+      ],
+      "id": "prompt_context",
+      "profile_assertions": {
+        "codex_wire_full": {
+          "required_extractors_contains": [
+            "extractor.prompt_context"
+          ]
+        },
+        "hybrid_v19": {
+          "required_extractors_contains": [
+            "extractor.prompt_context"
+          ]
+        },
+        "prompt_context_only": {
+          "required_extractors_contains": [
+            "extractor.prompt_context"
+          ]
+        }
+      },
+      "required_resources": [
+        "extractors/prompt_context.py",
+        "proof_schema_templates/prompt-context-semantics-v1.schema.json",
+        "coverage_profiles.v3.json"
+      ],
+      "status": "active_package"
+    },
+    {
       "extractor_ids": [],
       "id": "canonical_system_contract",
       "profile_assertions": {
@@ -175,7 +204,8 @@
           "required_extractors_contains": [
             "extractor.turn_metadata",
             "extractor.context_management",
-            "extractor.config_effects"
+            "extractor.config_effects",
+            "extractor.prompt_context"
           ]
         }
       },

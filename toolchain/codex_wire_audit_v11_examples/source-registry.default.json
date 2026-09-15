@@ -1,11 +1,11 @@
 {
   "counts": {
     "base": 16,
-    "extra": 64,
-    "optional": 90,
+    "extra": 68,
+    "optional": 94,
     "required": 16,
     "surface": 26,
-    "total": 106
+    "total": 110
   },
   "schema_version": "1.0.0",
   "sources": {
@@ -1141,6 +1141,86 @@
       "required": false,
       "roles": [
         "context_management"
+      ]
+    },
+    "source_spec.extra.prompt_debug": {
+      "expected_symbols": [
+        "build_prompt_input_from_session",
+        "capture_step_context",
+        "for_prompt"
+      ],
+      "extractor_ids": [
+        "extractor.prompt_context"
+      ],
+      "group": "extra",
+      "id": "source_spec.extra.prompt_debug",
+      "legacy_key": "prompt_debug",
+      "path_candidates": [
+        "codex-rs/core/src/prompt_debug.rs"
+      ],
+      "required": false,
+      "roles": [
+        "prompt_context"
+      ]
+    },
+    "source_spec.extra.prompt_session_context": {
+      "expected_symbols": [
+        "get_prompt_base_instructions",
+        "build_initial_context_with_world_state",
+        "world_state.render_full()"
+      ],
+      "extractor_ids": [
+        "extractor.prompt_context"
+      ],
+      "group": "extra",
+      "id": "source_spec.extra.prompt_session_context",
+      "legacy_key": "prompt_session_context",
+      "path_candidates": [
+        "codex-rs/core/src/session/mod.rs"
+      ],
+      "required": false,
+      "roles": [
+        "prompt_context"
+      ]
+    },
+    "source_spec.extra.prompt_turn": {
+      "expected_symbols": [
+        "build_prompt",
+        "model_visible_specs",
+        "build_skills_and_plugins"
+      ],
+      "extractor_ids": [
+        "extractor.prompt_context"
+      ],
+      "group": "extra",
+      "id": "source_spec.extra.prompt_turn",
+      "legacy_key": "prompt_turn",
+      "path_candidates": [
+        "codex-rs/core/src/session/turn.rs"
+      ],
+      "required": false,
+      "roles": [
+        "prompt_context"
+      ]
+    },
+    "source_spec.extra.prompt_world_state": {
+      "expected_symbols": [
+        "build_world_state_for_step",
+        "AgentsMdState::new",
+        "PluginsInstructionsState::new"
+      ],
+      "extractor_ids": [
+        "extractor.prompt_context"
+      ],
+      "group": "extra",
+      "id": "source_spec.extra.prompt_world_state",
+      "legacy_key": "prompt_world_state",
+      "path_candidates": [
+        "codex-rs/core/src/session/world_state.rs"
+      ],
+      "required": false,
+      "roles": [
+        "prompt_context"
       ]
     },
     "source_spec.extra.protocol": {

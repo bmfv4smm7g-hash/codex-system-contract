@@ -253,6 +253,12 @@ def from_legacy_maps(
         ("source_spec.extra.local_storage_shell_snapshot", "local_storage_shell_snapshot", "codex-rs/core/src/shell_snapshot.rs", ("SNAPSHOT_DIR", "SNAPSHOT_RETENTION", "session_id")),
         ("source_spec.extra.local_storage_visualization", "local_storage_visualization", "codex-rs/tui/src/inline_visualization.rs", ("visualizations", "visualization-viewers", "thread_id")),
     )
+    prompt_specs = (
+        ("source_spec.extra.prompt_world_state", "prompt_world_state", "codex-rs/core/src/session/world_state.rs", ("build_world_state_for_step", "AgentsMdState::new", "PluginsInstructionsState::new")),
+        ("source_spec.extra.prompt_session_context", "prompt_session_context", "codex-rs/core/src/session/mod.rs", ("get_prompt_base_instructions", "build_initial_context_with_world_state", "world_state.render_full()")),
+        ("source_spec.extra.prompt_turn", "prompt_turn", "codex-rs/core/src/session/turn.rs", ("build_prompt", "model_visible_specs", "build_skills_and_plugins")),
+        ("source_spec.extra.prompt_debug", "prompt_debug", "codex-rs/core/src/prompt_debug.rs", ("build_prompt_input_from_session", "capture_step_context", "for_prompt")),
+    )
     specs.append(SourceSpec(
         id="source_spec.extra.generated_config_schema",
         legacy_key="generated_config_schema",
@@ -300,5 +306,19 @@ def from_legacy_maps(
             roles=("local_storage",),
             expected_symbols=tuple(symbols),
             extractor_ids=("extractor.local_storage",),
+        ))
+    existing_ids = {spec.id for spec in specs}
+    for spec_id, legacy_key, path, symbols in prompt_specs:
+        if spec_id in existing_ids:
+            continue
+        specs.append(SourceSpec(
+            id=spec_id,
+            legacy_key=legacy_key,
+            group=SourceGroup.EXTRA,
+            path_candidates=(path,),
+            required=False,
+            roles=("prompt_context",),
+            expected_symbols=tuple(symbols),
+            extractor_ids=("extractor.prompt_context",),
         ))
     return SourceRegistry(specs)
