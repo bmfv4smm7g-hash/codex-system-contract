@@ -154,14 +154,16 @@ def _merge_structured_diagnostics(report: MutableMapping[str, Any], diagnostics:
         summary[severity] = summary.get(severity, 0) + 1
     report['diagnostic_summary'] = summary
 
-def _attach_integrity(report: MutableMapping[str, Any]) -> None:
+def _attach_integrity(report: MutableMapping[str, Any], canonical_model: Mapping[str, Any]) -> None:
     payload = canonical_report_payload(report)
-    digest = hashlib.sha256(canonical_json_bytes(payload)).hexdigest()
+    payload_sha256 = hashlib.sha256(canonical_json_bytes(payload)).hexdigest()
     integrity = report.get('integrity')
     if not isinstance(integrity, MutableMapping):
         integrity = {}
         report['integrity'] = integrity
-    integrity.update({'algorithm': 'sha256', 'canonicalization': 'codex-wire-audit-canonical-json-v2', 'payload_excludes': ['generated_at', 'integrity', 'status.validated_at'], 'payload_sha256': digest, 'source_set_sha256': ((report.get('evolution_contract') or {}).get('source_revision') or {}).get('source_set_sha256'), 'canonical_ir_sha256': ((report.get('evolution_contract') or {}).get('integrity') or {}).get('canonical_ir_sha256')})
+    source_revision = canonical_model.get('source_revision') or {}
+    model_integrity = canonical_model.get('integrity') or {}
+    integrity.update({'algorithm': 'sha256', 'canonicalization': 'codex-wire-audit-canonical-json-v2', 'payload_excludes': ['generated_at', 'integrity', 'status.validated_at'], 'payload_sha256': payload_sha256, 'source_set_sha256': source_revision.get('source_set_sha256'), 'canonical_ir_sha256': model_integrity.get('canonical_ir_sha256')})
 
 def _update_report_status(report: MutableMapping[str, Any], evolution_contract: Mapping[str, Any]) -> None:
     status = report.setdefault('status', {})
@@ -195,11 +197,7 @@ def generate_report(args: Any, legacy: LegacyModules, *, baseline_report: Mappin
     if turn_result:
         apply_turn_metadata_overlay(report, turn_result)
     config_result = extractor_results.get('extractor.config_effects')
-    if config_result:
-        pass
     local_storage_result = extractor_results.get('extractor.local_storage')
-    if local_storage_result:
-        pass
     resolver = SchemaIdentityResolver.from_report(report)
     contract_module = legacy.contract
     original_schema_id = contract_module._schema_id
@@ -233,14 +231,14 @@ def generate_report(args: Any, legacy: LegacyModules, *, baseline_report: Mappin
         raise SourceLoadError(f'canonical contract validation failed: {error}') from error
     _merge_structured_diagnostics(report, diagnostics)
     _update_report_status(report, evolution_contract)
-    _attach_integrity(report)
+    _attach_integrity(report, evolution_contract)
     validation_errors = contract_module.validate_report(report)
     if validation_errors:
         for item in validation_errors:
             diagnostics.emit(Diagnostic(code='REPORT_VALIDATION_FAILED', severity='error', category='report_validation', message=str(item.get('message') or 'Generated report failed validation.'), extractor_id='report_validator', report_pointer=str(item.get('report_pointer') or item.get('pointer') or '/'), details={'validator_diagnostic': item}, recoverable=False, strict_failure=True))
         _merge_structured_diagnostics(report, diagnostics)
         _update_report_status(report, evolution_contract)
-        _attach_integrity(report)
+        _attach_integrity(report, evolution_contract)
         raise SourceLoadError('generated report failed validation: ' + '; '.join((str(item.get('message')) for item in validation_errors[:5])))
     return GenerationResult(report=dict(report), snapshot=snapshot, registry=registry, diagnostics=diagnostics, semantic_diff=semantic_diff)
 
