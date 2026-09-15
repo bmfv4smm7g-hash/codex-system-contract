@@ -249,7 +249,7 @@ class EvolutionContractTests(unittest.TestCase):
         contract = contract_for_fixture("responses_metadata_identity_split.rs")
         self.assertEqual(contract["schema_version"], EVOLUTION_CONTRACT_VERSION)
         self.assertEqual(contract["generator_version"], GENERATOR_VERSION)
-        self.assertEqual(contract["migration"]["stage"], "hybrid_canonical_ir")
+        self.assertEqual(contract["migration"]["stage"], "canonical_ir")
         self.assertEqual(contract["status"]["semantic_classification"], "complete")
         self.assertEqual(validate_evolution_contract(contract), [])
 

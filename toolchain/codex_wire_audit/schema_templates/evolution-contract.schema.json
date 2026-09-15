@@ -177,7 +177,7 @@
           "type": "boolean"
         },
         "stage": {
-          "const": "hybrid_canonical_ir"
+          "const": "canonical_ir"
         }
       },
       "required": [
