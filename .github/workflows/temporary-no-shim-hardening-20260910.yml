@@ -47,6 +47,7 @@ jobs:
         run: |
           set -euo pipefail
           test -f .github/direct-contract-migration-v2.py
+          test -f .github/direct-contract-postprocess.py
           python - <<'PY'
           from pathlib import Path
           import re
@@ -97,7 +98,9 @@ jobs:
           path.write_text(text, encoding='utf-8')
           PY
           python .github/direct-contract-migration-v2.py
+          python .github/direct-contract-postprocess.py
           rm -f .github/direct-contract-migration-v2.py
+          rm -f .github/direct-contract-postprocess.py
           rm -f .github/workflows/review-canonical-source.yml
           rm -f .github/workflows/canonical-representation-v2.yml
           rm -f .github/canonical_bootstrap_v2.py
@@ -174,6 +177,7 @@ jobs:
           set -euo pipefail
           test ! -e toolchain/codex_wire_audit/compatibility_views.py
           test ! -e .github/direct-contract-migration-v2.py
+          test ! -e .github/direct-contract-postprocess.py
           test ! -e .github/workflows/review-canonical-source.yml
           python - <<'PY'
           from __future__ import annotations
