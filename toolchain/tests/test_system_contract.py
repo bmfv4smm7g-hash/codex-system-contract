@@ -1,4 +1,5 @@
 from __future__ import annotations
+import copy
 from dataclasses import replace
 import json
 from pathlib import Path
@@ -62,6 +63,25 @@ def test_rehashing_cannot_hide_reference_or_coverage_errors(mutation, match):
     mutation(model)
     with pytest.raises(ValueError, match=match):
         validate_system_contract(reseal_model(model))
+
+def test_declared_specs_may_share_one_physical_source():
+    model, _ = combined_model()
+    files = model['source_snapshot']['files']
+    unavailable = model['source_snapshot']['unavailable_specs']
+    source_id = 'source_spec.extra.feature_configs'
+    alias_id = 'source_spec.surface.guardian_feature_config'
+    assert source_id in files
+    assert alias_id in model['source_registry']['sources']
+    assert model['source_registry']['sources'][source_id]['path_candidates'] == model['source_registry']['sources'][alias_id]['path_candidates']
+    alias = copy.deepcopy(files[source_id])
+    alias['spec_id'] = alias_id
+    files[alias_id] = alias
+    unavailable.pop(alias_id, None)
+    model['source_snapshot']['counts'] = {
+        'available': len(files),
+        'unavailable': len(unavailable),
+    }
+    validate_system_contract(reseal_model(model))
 
 def test_new_extractor_is_not_dropped_by_a_hard_coded_surface_catalog():
     model = fixture_contract()['model']
