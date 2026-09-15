@@ -40,6 +40,65 @@ def replacement_function(source: str) -> ast.FunctionDef:
     return node
 
 
+def repair_generated_direct_test() -> None:
+    """Keep the generated direct-contract tests inside the release closure."""
+    path = TESTS / "test_direct_system_contract.py"
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    model_function = replacement_function('''
+def model() -> dict:
+    return contract_for_fixture("responses_metadata_identity_split.rs")
+''')
+
+    saw_model = False
+    body: list[ast.stmt] = []
+    for node in tree.body:
+        if isinstance(node, ast.Import):
+            node.names = [alias for alias in node.names if alias.name != "json"]
+            if not node.names:
+                continue
+        elif isinstance(node, ast.ImportFrom) and node.module == "pathlib":
+            node.names = [alias for alias in node.names if alias.name != "Path"]
+            if not node.names:
+                continue
+        elif isinstance(node, ast.Assign):
+            names = {
+                target.id
+                for target in node.targets
+                if isinstance(target, ast.Name)
+            }
+            if names & {"ROOT", "FIXTURE"}:
+                continue
+        elif isinstance(node, ast.FunctionDef) and node.name == "model":
+            body.append(ast.copy_location(model_function, node))
+            saw_model = True
+            continue
+        body.append(node)
+
+    if not saw_model:
+        raise SystemExit("generated direct-contract model helper was not found")
+    if any(
+        isinstance(node, ast.ImportFrom)
+        and node.module == "test_codex_wire_audit_v11"
+        and any(alias.name == "contract_for_fixture" for alias in node.names)
+        for node in body
+    ):
+        raise SystemExit("generated direct-contract fixture import already exists")
+
+    import_node = ast.ImportFrom(
+        module="test_codex_wire_audit_v11",
+        names=[ast.alias(name="contract_for_fixture")],
+        level=0,
+    )
+    insertion = 0
+    while insertion < len(body) and isinstance(body[insertion], (ast.Import, ast.ImportFrom)):
+        insertion += 1
+    body.insert(insertion, import_node)
+    tree.body = body
+    ast.fix_missing_locations(tree)
+    compile(tree, str(path), "exec")
+    write_text(path, ast.unparse(tree))
+
+
 def repair_direct_contract_tests() -> None:
     path = TESTS / "test_system_contract.py"
     tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
@@ -136,6 +195,7 @@ def restore_canonical_capability_claim() -> None:
 
 def main() -> None:
     order_reference_validation()
+    repair_generated_direct_test()
     repair_direct_contract_tests()
     restore_canonical_capability_claim()
     print(json.dumps({"status": "direct-contract-postprocess-complete"}, sort_keys=True))
