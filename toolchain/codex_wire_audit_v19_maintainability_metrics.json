@@ -1,6 +1,6 @@
 {
   "active_implementation": {
-    "function_count": 516,
+    "function_count": 519,
     "functions_over_200_lines": [],
     "functions_over_complexity_45": [],
     "internal_import_cycles": [],
@@ -213,11 +213,11 @@
       "qualified_name": "verify_git_source",
       "start_line": 75
     },
-    "physical_line_count": 14831,
-    "source_sha256": "58ca6766e35876ce2c16454043c911dbc1cf2ae53a970697c79202110a1c32fd"
+    "physical_line_count": 14902,
+    "source_sha256": "1353890aab4f4e68ea3e8cf837da64464070bdff9cdb6c7ad6dea9b46bb4e72e"
   },
   "active_package": {
-    "function_count": 381,
+    "function_count": 384,
     "functions_over_200_lines": [],
     "functions_over_complexity_45": [],
     "internal_import_cycles": [],
@@ -430,8 +430,8 @@
       "qualified_name": "verify_git_source",
       "start_line": 75
     },
-    "physical_line_count": 11484,
-    "source_sha256": "cfae0ea8da273e54c07d204139310f8458fc17bb06497f82fc8b88462ba2a88f"
+    "physical_line_count": 11555,
+    "source_sha256": "1118557163bd106e0b6ed99eae05abc312b3ee1ce0b1e491c631934080e2c37c"
   },
   "active_release_tools": {
     "function_count": 135,
@@ -682,7 +682,7 @@
     "registered_optional_sources": 90,
     "registered_required_sources": 16,
     "registered_source_specs": 106,
-    "regression_test_methods": 209,
+    "regression_test_methods": 211,
     "standalone_release_schemas": 1,
     "strict_schema_templates": 17
   },
