@@ -9,6 +9,7 @@ from . import config_effects as _config_effects  # noqa: E402,F401
 from . import local_storage as _local_storage  # noqa: E402,F401
 from . import prompt_context as _prompt_context  # noqa: E402,F401
 from . import execution_policy as _execution_policy  # noqa: E402,F401
+from . import plugin_runtime as _plugin_runtime  # noqa: E402,F401
 
 __all__ = [
     "Extractor",

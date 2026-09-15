@@ -156,6 +156,30 @@ def _spec_id(group: SourceGroup, key: str) -> str:
     return f"source_spec.{group.value}.{safe}"
 
 
+def _append_optional_specs(
+    specs: list[SourceSpec],
+    rows: Iterable[tuple[str, str, str, tuple[str, ...]]],
+    *,
+    role: str,
+    extractor_id: str,
+) -> None:
+    existing_ids = {spec.id for spec in specs}
+    for spec_id, legacy_key, path, symbols in rows:
+        if spec_id in existing_ids:
+            continue
+        specs.append(SourceSpec(
+            id=spec_id,
+            legacy_key=legacy_key,
+            group=SourceGroup.EXTRA,
+            path_candidates=(path,),
+            required=False,
+            roles=(role,),
+            expected_symbols=tuple(symbols),
+            extractor_ids=(extractor_id,),
+        ))
+        existing_ids.add(spec_id)
+
+
 def from_legacy_maps(
     base_files: Mapping[str, str],
     surface_files: Mapping[str, str],
@@ -268,6 +292,16 @@ def from_legacy_maps(
         ("source_spec.extra.policy_turn_context", "policy_turn_context", "codex-rs/core/src/session/turn_context.rs", ("fn approval_policy", "fn permission_profile", "fn allow_prefix_rules")),
         ("source_spec.extra.policy_exec_policy", "policy_exec_policy", "codex-rs/core/src/exec_policy.rs", ("ExecApprovalRequest", "prompt_is_rejected_by_policy", "Decision::Forbidden")),
     )
+    plugin_specs = (
+        ("source_spec.extra.plugin_model", "plugin_model", "codex-rs/plugin/src/lib.rs", ("PluginCapabilitySummary", "AppDeclaration", "PluginTelemetryMetadata")),
+        ("source_spec.extra.plugin_load_outcome", "plugin_load_outcome", "codex-rs/plugin/src/load_outcome.rs", ("LoadedPlugin", "PluginLoadOutcome", "effective_plugin_skill_roots")),
+        ("source_spec.extra.plugin_manifest", "plugin_manifest", "codex-rs/core-plugins/src/manifest.rs", ("PluginManifestFormat", "RawPluginManifest", "load_plugin_manifest_with_format")),
+        ("source_spec.extra.plugin_loader", "plugin_loader", "codex-rs/core-plugins/src/loader.rs", ("load_plugins_from_layer_stack", "PluginLoadScope", "load_plugin_skill_inventory")),
+        ("source_spec.extra.plugin_manager", "plugin_manager", "codex-rs/core-plugins/src/manager.rs", ("PluginsConfigInput", "plugins_for_config", "plugin_skill_snapshots_for_config")),
+        ("source_spec.extra.plugin_mentions", "plugin_mentions", "codex-rs/core/src/plugins/mentions.rs", ("collect_explicit_plugin_mentions", "collect_explicit_plugin_ids", "PLUGIN_TEXT_MENTION_SIGIL")),
+        ("source_spec.extra.plugin_injection", "plugin_injection", "codex-rs/core/src/plugins/injection.rs", ("build_plugin_injections", "PluginInstructions::new", "CODEX_APPS_MCP_SERVER_NAME")),
+        ("source_spec.extra.plugin_render", "plugin_render", "codex-rs/core/src/plugins/render.rs", ("render_explicit_plugin_instructions", "MAX_EXPLICIT_PLUGIN_INSTRUCTIONS_BYTES")),
+    )
     specs.append(SourceSpec(
         id="source_spec.extra.generated_config_schema",
         legacy_key="generated_config_schema",
@@ -288,60 +322,19 @@ def from_legacy_maps(
         expected_symbols=("features_schema", "Feature::Artifact", "Feature::GuardianThreadContext"),
         extractor_ids=("extractor.config_effects",),
     ))
-    existing_ids = {spec.id for spec in specs}
-    for spec_id, legacy_key, path, symbols in context_specs:
-        if spec_id in existing_ids:
-            continue
-        specs.append(SourceSpec(
-            id=spec_id,
-            legacy_key=legacy_key,
-            group=SourceGroup.EXTRA,
-            path_candidates=(path,),
-            required=False,
-            roles=("context_management",),
-            expected_symbols=tuple(symbols),
-            extractor_ids=("extractor.context_management",),
-        ))
-    existing_ids = {spec.id for spec in specs}
-    for spec_id, legacy_key, path, symbols in local_storage_specs:
-        if spec_id in existing_ids:
-            continue
-        specs.append(SourceSpec(
-            id=spec_id,
-            legacy_key=legacy_key,
-            group=SourceGroup.EXTRA,
-            path_candidates=(path,),
-            required=False,
-            roles=("local_storage",),
-            expected_symbols=tuple(symbols),
-            extractor_ids=("extractor.local_storage",),
-        ))
-    existing_ids = {spec.id for spec in specs}
-    for spec_id, legacy_key, path, symbols in prompt_specs:
-        if spec_id in existing_ids:
-            continue
-        specs.append(SourceSpec(
-            id=spec_id,
-            legacy_key=legacy_key,
-            group=SourceGroup.EXTRA,
-            path_candidates=(path,),
-            required=False,
-            roles=("prompt_context",),
-            expected_symbols=tuple(symbols),
-            extractor_ids=("extractor.prompt_context",),
-        ))
-    existing_ids = {spec.id for spec in specs}
-    for spec_id, legacy_key, path, symbols in policy_specs:
-        if spec_id in existing_ids:
-            continue
-        specs.append(SourceSpec(
-            id=spec_id,
-            legacy_key=legacy_key,
-            group=SourceGroup.EXTRA,
-            path_candidates=(path,),
-            required=False,
-            roles=("execution_policy",),
-            expected_symbols=tuple(symbols),
-            extractor_ids=("extractor.execution_policy",),
-        ))
+    _append_optional_specs(
+        specs, context_specs, role="context_management", extractor_id="extractor.context_management"
+    )
+    _append_optional_specs(
+        specs, local_storage_specs, role="local_storage", extractor_id="extractor.local_storage"
+    )
+    _append_optional_specs(
+        specs, prompt_specs, role="prompt_context", extractor_id="extractor.prompt_context"
+    )
+    _append_optional_specs(
+        specs, policy_specs, role="execution_policy", extractor_id="extractor.execution_policy"
+    )
+    _append_optional_specs(
+        specs, plugin_specs, role="plugin_runtime", extractor_id="extractor.plugin_runtime"
+    )
     return SourceRegistry(specs)
