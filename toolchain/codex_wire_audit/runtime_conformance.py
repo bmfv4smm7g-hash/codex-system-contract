@@ -282,7 +282,11 @@ def assemble_runtime_evidence(
         raise RuntimeEvidenceError("runtime evidence contains duplicate scenario ids")
     scenarios.sort(key=lambda item: item["id"])
     passed = {item["id"] for item in scenarios if item["status"] == "passed"}
-    status = "complete" if not (set(required) - passed) else "partial"
+    status = (
+        "complete"
+        if not (set(required) - passed) and all(item["status"] == "passed" for item in scenarios)
+        else "partial"
+    )
     return {
         "$schema": SCHEMA_ID,
         "format": FORMAT,
@@ -331,8 +335,10 @@ def validate_runtime_evidence(
         _validate_observer(evidence["observer"])
         report_repository, report_commit = _report_source(report)
         source_bound = (
-            (report_repository is None or scope["source_repository"] == report_repository)
-            and (report_commit is None or scope["source_commit"] == report_commit)
+            report_repository is not None
+            and report_commit is not None
+            and scope["source_repository"] == report_repository
+            and scope["source_commit"] == report_commit
         )
         if not source_bound:
             diagnostics.append(RuntimeDiagnostic("RUNTIME_EVIDENCE_SOURCE_MISMATCH", "runtime observation scope does not match the report source revision"))
@@ -346,7 +352,11 @@ def validate_runtime_evidence(
         passed = {item["id"] for item in scenarios if item["status"] == "passed"}
         if evidence["status"] not in {"complete", "partial"}:
             raise RuntimeEvidenceError("runtime evidence status is invalid")
-        calculated_status = "complete" if not (set(required) - passed) else "partial"
+        calculated_status = (
+            "complete"
+            if not (set(required) - passed) and all(item["status"] == "passed" for item in scenarios)
+            else "partial"
+        )
         if evidence["status"] != calculated_status:
             raise RuntimeEvidenceError("runtime evidence status disagrees with scenario outcomes")
     except RuntimeEvidenceError as error:

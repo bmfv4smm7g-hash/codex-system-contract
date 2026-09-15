@@ -213,8 +213,8 @@
       "qualified_name": "verify_git_source",
       "start_line": 75
     },
-    "physical_line_count": 19214,
-    "source_sha256": "0a5abde043034e8c2132041e640f59ae3ce2b5a8e72cc8d0fdad3cce815800ad"
+    "physical_line_count": 19224,
+    "source_sha256": "1dec940e4e9e30337d3ff44f1bce80d5cfa9cb0e1edcc12ace2a359d4f3adcad"
   },
   "active_package": {
     "function_count": 534,
@@ -416,7 +416,7 @@
       },
       {
         "file": "codex_wire_audit/runtime_conformance.py",
-        "line_count": 418
+        "line_count": 428
       }
     ],
     "maximum_module_fan_out": 10,
@@ -430,8 +430,8 @@
       "qualified_name": "verify_git_source",
       "start_line": 75
     },
-    "physical_line_count": 15867,
-    "source_sha256": "e0fb1f121ca91e501a2e657736b1924ea6f1bdf0f6f9bc8fca8aeaacdb0fae4b"
+    "physical_line_count": 15877,
+    "source_sha256": "2d5e34ed2dab6457709b1da983c47121bb2de4f22fc3357e173b4b14233ddc72"
   },
   "active_release_tools": {
     "function_count": 135,
@@ -682,7 +682,7 @@
     "registered_optional_sources": 126,
     "registered_required_sources": 16,
     "registered_source_specs": 142,
-    "regression_test_methods": 285,
+    "regression_test_methods": 287,
     "standalone_release_schemas": 1,
     "strict_schema_templates": 29
   },

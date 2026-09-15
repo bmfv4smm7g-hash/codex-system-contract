@@ -261,3 +261,48 @@ def test_old_minimal_runtime_evidence_no_longer_satisfies_full_profile() -> None
     assert not result.complete
     assert "RUNTIME_EVIDENCE_INVALID" in codes
     assert "RUNTIME_EVIDENCE_REPORT_MISMATCH" in codes
+
+
+def test_missing_report_source_identity_fails_closed() -> None:
+    report = _report()
+    del report["source_revision"]
+    evidence = assemble_runtime_evidence(
+        report,
+        profile_id="codex_wire_full",
+        scope=_scope(),
+        observer=_observer(),
+        observations=_all_scenarios(),
+    )
+    profile = resolve_profile("codex_wire_full")
+    result = validate_runtime_evidence(
+        evidence,
+        report,
+        profile_id="codex_wire_full",
+        required_scenarios=profile.required_runtime_scenarios,
+    )
+    assert not result.complete
+    assert not result.source_bound
+    assert any(item.code == "RUNTIME_EVIDENCE_SOURCE_MISMATCH" for item in result.diagnostics)
+
+
+def test_extra_failed_observation_forces_partial_status() -> None:
+    report = _report()
+    scenarios = _all_scenarios()
+    scenarios.append(_scenario("optional_canary", status="failed"))
+    evidence = assemble_runtime_evidence(
+        report,
+        profile_id="codex_wire_full",
+        scope=_scope(),
+        observer=_observer(),
+        observations=scenarios,
+    )
+    assert evidence["status"] == "partial"
+    profile = resolve_profile("codex_wire_full")
+    result = validate_runtime_evidence(
+        evidence,
+        report,
+        profile_id="codex_wire_full",
+        required_scenarios=profile.required_runtime_scenarios,
+    )
+    assert not result.complete
+    assert any(item.code == "RUNTIME_EVIDENCE_INVALID" for item in result.diagnostics) is False
