@@ -1,11 +1,11 @@
 {
   "counts": {
     "base": 16,
-    "extra": 68,
-    "optional": 94,
+    "extra": 75,
+    "optional": 101,
     "required": 16,
     "surface": 26,
-    "total": 110
+    "total": 117
   },
   "schema_version": "1.0.0",
   "sources": {
@@ -1141,6 +1141,146 @@
       "required": false,
       "roles": [
         "context_management"
+      ]
+    },
+    "source_spec.extra.policy_config_resolution": {
+      "expected_symbols": [
+        "resolve_effective_permission_selection",
+        "resolve_default_permissions",
+        "allowed_permission_profiles"
+      ],
+      "extractor_ids": [
+        "extractor.execution_policy"
+      ],
+      "group": "extra",
+      "id": "source_spec.extra.policy_config_resolution",
+      "legacy_key": "policy_config_resolution",
+      "path_candidates": [
+        "codex-rs/core/src/config/mod.rs"
+      ],
+      "required": false,
+      "roles": [
+        "execution_policy"
+      ]
+    },
+    "source_spec.extra.policy_exec_policy": {
+      "expected_symbols": [
+        "ExecApprovalRequest",
+        "prompt_is_rejected_by_policy",
+        "Decision::Forbidden"
+      ],
+      "extractor_ids": [
+        "extractor.execution_policy"
+      ],
+      "group": "extra",
+      "id": "source_spec.extra.policy_exec_policy",
+      "legacy_key": "policy_exec_policy",
+      "path_candidates": [
+        "codex-rs/core/src/exec_policy.rs"
+      ],
+      "required": false,
+      "roles": [
+        "execution_policy"
+      ]
+    },
+    "source_spec.extra.policy_permissions": {
+      "expected_symbols": [
+        "default_builtin_permission_profile_name",
+        "compile_permission_profile_selection",
+        "resolve_permission_profile"
+      ],
+      "extractor_ids": [
+        "extractor.execution_policy"
+      ],
+      "group": "extra",
+      "id": "source_spec.extra.policy_permissions",
+      "legacy_key": "policy_permissions",
+      "path_candidates": [
+        "codex-rs/core/src/config/permissions.rs"
+      ],
+      "required": false,
+      "roles": [
+        "execution_policy"
+      ]
+    },
+    "source_spec.extra.policy_profile_state": {
+      "expected_symbols": [
+        "PermissionProfileState",
+        "active_permission_profile",
+        "profile_workspace_roots"
+      ],
+      "extractor_ids": [
+        "extractor.execution_policy"
+      ],
+      "group": "extra",
+      "id": "source_spec.extra.policy_profile_state",
+      "legacy_key": "policy_profile_state",
+      "path_candidates": [
+        "codex-rs/core/src/config/resolved_permission_profile.rs"
+      ],
+      "required": false,
+      "roles": [
+        "execution_policy"
+      ]
+    },
+    "source_spec.extra.policy_protocol": {
+      "expected_symbols": [
+        "pub enum PermissionProfile",
+        "pub enum SandboxEnforcement",
+        "pub struct ActivePermissionProfile"
+      ],
+      "extractor_ids": [
+        "extractor.execution_policy"
+      ],
+      "group": "extra",
+      "id": "source_spec.extra.policy_protocol",
+      "legacy_key": "policy_protocol",
+      "path_candidates": [
+        "codex-rs/protocol/src/models.rs"
+      ],
+      "required": false,
+      "roles": [
+        "execution_policy"
+      ]
+    },
+    "source_spec.extra.policy_requirements": {
+      "expected_symbols": [
+        "pub struct ConfigRequirements",
+        "pub approval_policy",
+        "pub permission_profile"
+      ],
+      "extractor_ids": [
+        "extractor.execution_policy"
+      ],
+      "group": "extra",
+      "id": "source_spec.extra.policy_requirements",
+      "legacy_key": "policy_requirements",
+      "path_candidates": [
+        "codex-rs/config/src/config_requirements.rs"
+      ],
+      "required": false,
+      "roles": [
+        "execution_policy"
+      ]
+    },
+    "source_spec.extra.policy_turn_context": {
+      "expected_symbols": [
+        "fn approval_policy",
+        "fn permission_profile",
+        "fn allow_prefix_rules"
+      ],
+      "extractor_ids": [
+        "extractor.execution_policy"
+      ],
+      "group": "extra",
+      "id": "source_spec.extra.policy_turn_context",
+      "legacy_key": "policy_turn_context",
+      "path_candidates": [
+        "codex-rs/core/src/session/turn_context.rs"
+      ],
+      "required": false,
+      "roles": [
+        "execution_policy"
       ]
     },
     "source_spec.extra.prompt_debug": {

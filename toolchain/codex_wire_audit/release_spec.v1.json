@@ -197,6 +197,35 @@
       "status": "active_package"
     },
     {
+      "extractor_ids": [
+        "extractor.execution_policy"
+      ],
+      "id": "execution_policy",
+      "profile_assertions": {
+        "codex_wire_full": {
+          "required_extractors_contains": [
+            "extractor.execution_policy"
+          ]
+        },
+        "execution_policy_only": {
+          "required_extractors_contains": [
+            "extractor.execution_policy"
+          ]
+        },
+        "hybrid_v19": {
+          "required_extractors_contains": [
+            "extractor.execution_policy"
+          ]
+        }
+      },
+      "required_resources": [
+        "extractors/execution_policy.py",
+        "proof_schema_templates/execution-policy-semantics-v1.schema.json",
+        "coverage_profiles.v3.json"
+      ],
+      "status": "active_package"
+    },
+    {
       "extractor_ids": [],
       "id": "canonical_system_contract",
       "profile_assertions": {
@@ -205,7 +234,8 @@
             "extractor.turn_metadata",
             "extractor.context_management",
             "extractor.config_effects",
-            "extractor.prompt_context"
+            "extractor.prompt_context",
+            "extractor.execution_policy"
           ]
         }
       },
