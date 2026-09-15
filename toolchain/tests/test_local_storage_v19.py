@@ -150,3 +150,14 @@ def test_tui_steer_branch_boundary_drift_is_fail_visible() -> None:
     result, diagnostics = _extract({"tui_backtrack": broken})
     assert result.semantic_complete is False
     assert "LOCAL_STORAGE_SEMANTIC_MARKER_MISSING" in {item.code for item in diagnostics.values()}
+
+
+def test_v2_schema_requires_exact_steer_boundary_fields() -> None:
+    schema_path = Path(__file__).parents[1] / "codex_wire_audit" / "proof_schema_templates" / "local-storage-semantics-v2.schema.json"
+    schema = json.loads(schema_path.read_text(encoding="utf-8"))
+    required = schema["properties"]["transitions"]["properties"]["revert"]["required"]
+    assert {
+        "steer_representation",
+        "steer_independent_branch_supported",
+        "tui_steer_branch_error",
+    } <= set(required)

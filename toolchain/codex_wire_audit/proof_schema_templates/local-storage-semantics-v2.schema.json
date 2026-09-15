@@ -603,7 +603,10 @@
             "old_rollouts",
             "cutover",
             "creates_thread_row_for_rollout_id",
-            "on_compare_and_swap_conflict"
+            "on_compare_and_swap_conflict",
+            "steer_representation",
+            "steer_independent_branch_supported",
+            "tui_steer_branch_error"
           ],
           "properties": {
             "precondition": {

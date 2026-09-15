@@ -19,7 +19,7 @@ Largest combined module: **`codex_wire_audit/metadata_history.py`** (581 lines).
 - Source registry entries: **148** (16 required, 132 optional).
 - Strict schemas: **30**, including **1** release-spec schema.
 - Metadata history: **7 keys**, **19 states**, **10 versions**, **9 transitions**.
-- Regression test methods: **289**.
+- Regression test methods: **290**.
 - Combined source digest: `f9b0f2f2c89727488f50ba9d2571f5e9705ba748df93d8900c2c4a1a13ed0443`.
 
 ## Enforced budgets
