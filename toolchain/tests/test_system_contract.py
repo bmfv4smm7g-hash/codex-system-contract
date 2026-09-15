@@ -1,5 +1,4 @@
 from __future__ import annotations
-import copy
 from dataclasses import replace
 import json
 from pathlib import Path
@@ -7,6 +6,7 @@ import subprocess
 import sys
 import pytest
 from jsonschema import Draft202012Validator
+from codex_wire_audit import system_contract_validation as contract_validation
 from codex_wire_audit.canonical import CanonicalizationError, canonical_json_bytes
 from codex_wire_audit.diagnostics import DiagnosticCollector
 from codex_wire_audit.evolution import build_evolution_contract, finalize_system_report
@@ -65,23 +65,32 @@ def test_rehashing_cannot_hide_reference_or_coverage_errors(mutation, match):
         validate_system_contract(reseal_model(model))
 
 def test_declared_specs_may_share_one_physical_source():
-    model, _ = combined_model()
-    files = model['source_snapshot']['files']
-    unavailable = model['source_snapshot']['unavailable_specs']
-    source_id = 'source_spec.extra.feature_configs'
-    alias_id = 'source_spec.surface.guardian_feature_config'
-    assert source_id in files
-    assert alias_id in model['source_registry']['sources']
-    assert model['source_registry']['sources'][source_id]['path_candidates'] == model['source_registry']['sources'][alias_id]['path_candidates']
-    alias = copy.deepcopy(files[source_id])
-    alias['spec_id'] = alias_id
-    files[alias_id] = alias
-    unavailable.pop(alias_id, None)
-    model['source_snapshot']['counts'] = {
-        'available': len(files),
-        'unavailable': len(unavailable),
+    revision = {'source_mode': 'fixture'}
+    path = 'codex-rs/shared.rs'
+    first = 'source_spec.extra.first'
+    second = 'source_spec.surface.second'
+    model = {
+        'source_registry': {
+            'sources': {
+                first: {'id': first, 'path_candidates': [path], 'required': False},
+                second: {'id': second, 'path_candidates': [path], 'required': False},
+            }
+        },
+        'source_snapshot': {
+            'revision': revision,
+            'files': {
+                first: {'spec_id': first, 'path': path, 'path_candidate_index': 0},
+                second: {'spec_id': second, 'path': path, 'path_candidate_index': 0},
+            },
+            'unavailable_specs': {},
+            'counts': {'available': 2, 'unavailable': 0},
+        },
+        'source_revision': revision,
+        'extractors': {},
+        'migration': {'canonical_ir_extractors': []},
+        'status': {'overall': 'partial'},
     }
-    validate_system_contract(reseal_model(model))
+    contract_validation._references(model)
 
 def test_new_extractor_is_not_dropped_by_a_hard_coded_surface_catalog():
     model = fixture_contract()['model']
