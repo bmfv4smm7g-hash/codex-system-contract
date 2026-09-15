@@ -1,0 +1,128 @@
+name: redirect-headers-maintenance
+
+on:
+  push:
+    branches:
+      - contract/routing/feat/redirect-headers
+    paths:
+      - .github/workflows/redirect-headers-maintenance.yml
+
+permissions:
+  contents: write
+
+jobs:
+  maintain:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: toolchain/ci/constraints.txt
+      - name: Install constrained test dependencies
+        working-directory: toolchain
+        run: python -m pip install --constraint ci/constraints.txt -e '.[test]'
+      - name: Wire redirect header routing domain
+        working-directory: toolchain
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+
+          registry = Path('codex_wire_audit/source_registry.py')
+          text = registry.read_text()
+          local_routing = '''    routing_specs = (\n        ("source_spec.extra.routing_proxy_spec", "routing_proxy_spec", "codex-rs/core/src/config/network_proxy_spec.rs", ("NetworkProxySpec", "start_proxy", "environment_policy")),\n        ("source_spec.extra.routing_proxy_config", "routing_proxy_config", "codex-rs/network-proxy/src/config.rs", ("NetworkProxyConfig", "NetworkMode", "resolve_runtime")),\n        ("source_spec.extra.routing_requirements", "routing_requirements", "codex-rs/config/src/config_requirements.rs", ("NetworkRequirementsToml", "managed_allowed_domains_only", "header_injections")),\n        ("source_spec.extra.routing_outbound_proxy", "routing_outbound_proxy", "codex-rs/http-client/src/outbound_proxy.rs", ("OutboundProxyPolicy", "HttpClientFactory", "resolve_proxy_route")),\n    )\n'''
+          if local_routing not in text:
+              raise SystemExit('local routing source-spec block missing')
+          text = text.replace(local_routing, '', 1)
+
+          insert_marker = '\n\n_MCP_SPECS = (\n'
+          routing_block = '''\n\n_ROUTING_TRANSPORT_SPECS = (\n    ("source_spec.extra.routing_proxy_spec", "routing_proxy_spec", "codex-rs/core/src/config/network_proxy_spec.rs", ("NetworkProxySpec", "start_proxy", "environment_policy")),\n    ("source_spec.extra.routing_proxy_config", "routing_proxy_config", "codex-rs/network-proxy/src/config.rs", ("NetworkProxyConfig", "NetworkMode", "resolve_runtime")),\n    ("source_spec.extra.routing_requirements", "routing_requirements", "codex-rs/config/src/config_requirements.rs", ("NetworkRequirementsToml", "managed_allowed_domains_only", "header_injections")),\n    ("source_spec.extra.routing_outbound_proxy", "routing_outbound_proxy", "codex-rs/http-client/src/outbound_proxy.rs", ("OutboundProxyPolicy", "HttpClientFactory", "resolve_proxy_route")),\n)\n\n_REDIRECT_HEADER_SPECS = (\n    ("source_spec.extra.route_aware_redirect", "route_aware_redirect", "codex-rs/http-client/src/route_aware_redirect.rs", ("redirect_request", "remove_sensitive_headers", "insert_referer")),\n    ("source_spec.extra.mcp_http_redirect", "mcp_http_redirect", "codex-rs/rmcp-client/src/http_client_redirect.rs", ("SameOriginRedirectHttpClient", "MAX_REDIRECTS", "HttpRedirectPolicy::Stop")),\n    ("source_spec.extra.mcp_http_headers", "mcp_http_headers", "codex-rs/rmcp-client/src/http_headers.rs", ("HttpHeadersProvider", "HttpHeadersClient", "with_http_headers_helper")),\n)\n\ndef _merge_routing_domain_specs(specs: list[SourceSpec]) -> None:\n    for rows, role, extractor_id in (\n        (_ROUTING_TRANSPORT_SPECS, "routing_transport", "extractor.routing_transport"),\n        (_REDIRECT_HEADER_SPECS, "redirect_headers", "extractor.redirect_headers"),\n    ):\n        _merge_optional_specs(specs, rows, role=role, extractor_id=extractor_id)\n'''
+          if '_ROUTING_TRANSPORT_SPECS = (' not in text:
+              if insert_marker not in text:
+                  raise SystemExit('module-scope routing insertion marker missing')
+              text = text.replace(insert_marker, routing_block + insert_marker, 1)
+
+          append_block = '''    _append_optional_specs(\n        specs,\n        routing_specs,\n        role="routing_transport",\n        extractor_id="extractor.routing_transport",\n    )\n    _merge_protocol_domain_specs(specs)'''
+          append_replacement = '''    _merge_routing_domain_specs(specs)\n    _merge_protocol_domain_specs(specs)'''
+          if append_block not in text:
+              raise SystemExit('routing append block missing')
+          text = text.replace(append_block, append_replacement, 1)
+          registry.write_text(text)
+
+          init = Path('codex_wire_audit/extractors/__init__.py')
+          text = init.read_text()
+          if '"redirect_headers"' not in text:
+              marker = '    "routing_transport",\n'
+              if marker not in text:
+                  raise SystemExit('routing activation marker missing')
+              text = text.replace(marker, marker + '    "redirect_headers",\n', 1)
+          init.write_text(text)
+
+          profiles_path = Path('codex_wire_audit/coverage_profiles.v3.json')
+          doc = json.loads(profiles_path.read_text())
+          by_id = {row['id']: row for row in doc['profiles']}
+          full = by_id['codex_wire_full']['required_extractors']
+          if 'extractor.redirect_headers' not in full:
+              raise SystemExit('codex_wire_full lost declared extractor.redirect_headers')
+          routing = by_id['routing_transport_only']
+          if 'extractor.redirect_headers' not in routing['required_extractors']:
+              routing['required_extractors'].append('extractor.redirect_headers')
+          routing['description'] = (
+              'Focused source-derived routing/proxy/redirect-header proof without claiming permission authority, '
+              'environment construction, provider protocol semantics, or plugin/MCP capability ownership.'
+          )
+          hybrid = by_id['hybrid_v19']
+          if 'extractor.redirect_headers' not in hybrid['required_extractors']:
+              hybrid['required_extractors'].append('extractor.redirect_headers')
+          hybrid['description'] = hybrid['description'].replace(
+              'routing/proxy transport,',
+              'routing/proxy transport and redirect/header replay,'
+          )
+          profiles_path.write_text(json.dumps(doc, indent=2) + '\n')
+
+          release_path = Path('codex_wire_audit/release_spec.v1.json')
+          release = json.loads(release_path.read_text())
+          claims = release['capability_claims']
+          claim = next(row for row in claims if row['id'] == 'routing_transport')
+          if 'extractor.redirect_headers' not in claim['extractor_ids']:
+              claim['extractor_ids'].append('extractor.redirect_headers')
+          for profile_id in ('codex_wire_full', 'hybrid_v19', 'routing_transport_only'):
+              required = claim['profile_assertions'][profile_id]['required_extractors_contains']
+              if 'extractor.redirect_headers' not in required:
+                  required.append('extractor.redirect_headers')
+          for resource in (
+              'extractors/redirect_headers.py',
+              'proof_schema_templates/redirect-header-semantics-v1.schema.json',
+          ):
+              if resource not in claim['required_resources']:
+                  claim['required_resources'].append(resource)
+          canonical = next(row for row in claims if row['id'] == 'canonical_system_contract')
+          required = canonical['profile_assertions']['hybrid_v19']['required_extractors_contains']
+          if 'extractor.redirect_headers' not in required:
+              required.append('extractor.redirect_headers')
+          release_path.write_text(json.dumps(release, indent=2) + '\n')
+          PY
+          python -m pytest -q tests/test_redirect_headers_extractor.py
+          python -m pytest -q
+          make legacy-assets
+          python tools/maintainability_metrics.py --write
+          python -m pytest -q tests/test_release_pipeline_v18.py::test_release_pipeline_is_series_driven_and_tooling_is_budgeted
+      - name: Commit deterministic redirect outputs
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -- \
+            toolchain/codex_wire_audit/source_registry.py \
+            toolchain/codex_wire_audit/extractors/__init__.py \
+            toolchain/codex_wire_audit/coverage_profiles.v3.json \
+            toolchain/codex_wire_audit/release_spec.v1.json \
+            toolchain/codex_wire_audit_v11_examples/source-registry.default.json \
+            toolchain/codex_wire_audit_v11_examples/manifest.json \
+            toolchain/codex_wire_audit_v19_maintainability_metrics.json \
+            toolchain/CODEX_WIRE_AUDIT_V19_METRICS.md
+          git diff --cached --quiet && exit 0
+          git commit -m 'chore(routing): wire redirect headers and refresh evidence'
+          git push origin HEAD:contract/routing/feat/redirect-headers
