@@ -238,6 +238,24 @@ def _merge_routing_domain_specs(specs: list[SourceSpec]) -> None:
         _merge_optional_specs(specs, rows, role=role, extractor_id=extractor_id)
 
 
+_APP_SERVER_RPC_SPECS = (
+    ("source_spec.extra.app_server_common", "app_server_common", "codex-rs/app-server-protocol/src/protocol/common.rs", ("client_request_definitions", "server_notification_definitions", "ClientRequestSerializationScope")),
+    ("source_spec.extra.app_server_thread", "app_server_thread", "codex-rs/app-server-protocol/src/protocol/v2/thread.rs", ("ThreadStartParams", "ThreadResumeParams", "ThreadStatus", "ThreadTurnsListParams", "ThreadItemsListParams")),
+    ("source_spec.extra.app_server_thread_data", "app_server_thread_data", "codex-rs/app-server-protocol/src/protocol/v2/thread_data.rs", ("ThreadHistoryMode", "Thread", "Turn", "TurnItemsView")),
+    ("source_spec.extra.app_server_turn", "app_server_turn", "codex-rs/app-server-protocol/src/protocol/v2/turn.rs", ("TurnStatus", "TurnStartParams", "TurnSteerParams", "TurnInterruptParams")),
+    ("source_spec.extra.app_server_item", "app_server_item", "codex-rs/app-server-protocol/src/protocol/v2/item.rs", ("ThreadItem",)),
+    ("source_spec.extra.app_server_rpc", "app_server_rpc", "codex-rs/app-server-protocol/src/rpc.rs", ("JSONRPCMessage", "JSONRPCRequest", "JSONRPCNotification", "JSONRPCResponse", "JSONRPCError")),
+)
+
+def _merge_app_server_domain_specs(specs: list[SourceSpec]) -> None:
+    _merge_optional_specs(
+        specs,
+        _APP_SERVER_RPC_SPECS,
+        role="app_server_rpc",
+        extractor_id="extractor.app_server_rpc",
+    )
+
+
 _MCP_SPECS = (
     ("source_spec.extra.mcp_catalog", "mcp_catalog", "codex-rs/codex-mcp/src/catalog.rs", ("McpServerSource", "McpCatalogBuilder", "ResolvedMcpCatalog")),
     ("source_spec.extra.mcp_runtime", "mcp_runtime", "codex-rs/codex-mcp/src/mcp/mod.rs", ("McpConfig", "effective_mcp_servers", "ToolPluginProvenance")),
@@ -447,4 +465,5 @@ def from_legacy_maps(
     )
     _merge_routing_domain_specs(specs)
     _merge_protocol_domain_specs(specs)
+    _merge_app_server_domain_specs(specs)
     return SourceRegistry(specs)

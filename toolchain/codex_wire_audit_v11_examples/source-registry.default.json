@@ -1,11 +1,11 @@
 {
   "counts": {
     "base": 16,
-    "extra": 96,
-    "optional": 122,
+    "extra": 100,
+    "optional": 126,
     "required": 16,
     "surface": 26,
-    "total": 138
+    "total": 142
   },
   "schema_version": "1.0.0",
   "sources": {
@@ -309,8 +309,14 @@
       ]
     },
     "source_spec.extra.app_server_common": {
-      "expected_symbols": [],
-      "extractor_ids": [],
+      "expected_symbols": [
+        "client_request_definitions",
+        "server_notification_definitions",
+        "ClientRequestSerializationScope"
+      ],
+      "extractor_ids": [
+        "extractor.app_server_rpc"
+      ],
       "group": "extra",
       "id": "source_spec.extra.app_server_common",
       "legacy_key": "app_server_common",
@@ -319,7 +325,26 @@
       ],
       "required": false,
       "roles": [
-        "legacy_extra"
+        "legacy_extra",
+        "app_server_rpc"
+      ]
+    },
+    "source_spec.extra.app_server_item": {
+      "expected_symbols": [
+        "ThreadItem"
+      ],
+      "extractor_ids": [
+        "extractor.app_server_rpc"
+      ],
+      "group": "extra",
+      "id": "source_spec.extra.app_server_item",
+      "legacy_key": "app_server_item",
+      "path_candidates": [
+        "codex-rs/app-server-protocol/src/protocol/v2/item.rs"
+      ],
+      "required": false,
+      "roles": [
+        "app_server_rpc"
       ]
     },
     "source_spec.extra.app_server_rate_limit_resets": {
@@ -364,9 +389,81 @@
         "legacy_extra"
       ]
     },
+    "source_spec.extra.app_server_rpc": {
+      "expected_symbols": [
+        "JSONRPCMessage",
+        "JSONRPCRequest",
+        "JSONRPCNotification",
+        "JSONRPCResponse",
+        "JSONRPCError"
+      ],
+      "extractor_ids": [
+        "extractor.app_server_rpc"
+      ],
+      "group": "extra",
+      "id": "source_spec.extra.app_server_rpc",
+      "legacy_key": "app_server_rpc",
+      "path_candidates": [
+        "codex-rs/app-server-protocol/src/rpc.rs"
+      ],
+      "required": false,
+      "roles": [
+        "app_server_rpc"
+      ]
+    },
+    "source_spec.extra.app_server_thread": {
+      "expected_symbols": [
+        "ThreadStartParams",
+        "ThreadResumeParams",
+        "ThreadStatus",
+        "ThreadTurnsListParams",
+        "ThreadItemsListParams"
+      ],
+      "extractor_ids": [
+        "extractor.app_server_rpc"
+      ],
+      "group": "extra",
+      "id": "source_spec.extra.app_server_thread",
+      "legacy_key": "app_server_thread",
+      "path_candidates": [
+        "codex-rs/app-server-protocol/src/protocol/v2/thread.rs"
+      ],
+      "required": false,
+      "roles": [
+        "app_server_rpc"
+      ]
+    },
+    "source_spec.extra.app_server_thread_data": {
+      "expected_symbols": [
+        "ThreadHistoryMode",
+        "Thread",
+        "Turn",
+        "TurnItemsView"
+      ],
+      "extractor_ids": [
+        "extractor.app_server_rpc"
+      ],
+      "group": "extra",
+      "id": "source_spec.extra.app_server_thread_data",
+      "legacy_key": "app_server_thread_data",
+      "path_candidates": [
+        "codex-rs/app-server-protocol/src/protocol/v2/thread_data.rs"
+      ],
+      "required": false,
+      "roles": [
+        "app_server_rpc"
+      ]
+    },
     "source_spec.extra.app_server_turn": {
-      "expected_symbols": [],
-      "extractor_ids": [],
+      "expected_symbols": [
+        "TurnStatus",
+        "TurnStartParams",
+        "TurnSteerParams",
+        "TurnInterruptParams"
+      ],
+      "extractor_ids": [
+        "extractor.app_server_rpc"
+      ],
       "group": "extra",
       "id": "source_spec.extra.app_server_turn",
       "legacy_key": "app_server_turn",
@@ -375,7 +472,8 @@
       ],
       "required": false,
       "roles": [
-        "legacy_extra"
+        "legacy_extra",
+        "app_server_rpc"
       ]
     },
     "source_spec.extra.compact_token_budget": {
