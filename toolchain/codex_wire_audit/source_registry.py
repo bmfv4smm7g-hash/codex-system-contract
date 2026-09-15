@@ -391,6 +391,7 @@ def from_legacy_maps(
         ("source_spec.extra.local_storage_rollout_resolver", "local_storage_rollout_resolver", "codex-rs/thread-store/src/local/thread_rollout_resolver.rs", ("resolve_current", "LookupScope", "rollout_path")),
         ("source_spec.extra.local_storage_model_context", "local_storage_model_context", "codex-rs/thread-store/src/local/model_context.rs", ("load_latest_model_context", "ReverseJsonlScanner", "resolve_rollout_lineage")),
         ("source_spec.extra.local_storage_history_read", "local_storage_history_read", "codex-rs/thread-store/src/local/thread_history/read.rs", ("list_turns", "list_items", "thread_history_db")),
+        ("source_spec.extra.local_storage_tui_backtrack", "local_storage_tui_backtrack", "codex-rs/tui/src/app_backtrack.rs", ("backtrack_fork_before_turn_id", "cannot be branched independently", "cannot fork in the middle of a turn")),
         ("source_spec.extra.local_storage_shell_snapshot", "local_storage_shell_snapshot", "codex-rs/core/src/shell_snapshot.rs", ("SNAPSHOT_DIR", "SNAPSHOT_RETENTION", "session_id")),
         ("source_spec.extra.local_storage_visualization", "local_storage_visualization", "codex-rs/tui/src/inline_visualization.rs", ("visualizations", "visualization-viewers", "thread_id")),
     )

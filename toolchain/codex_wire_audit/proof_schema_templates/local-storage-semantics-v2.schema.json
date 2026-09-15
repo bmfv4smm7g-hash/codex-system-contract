@@ -603,7 +603,10 @@
             "old_rollouts",
             "cutover",
             "creates_thread_row_for_rollout_id",
-            "on_compare_and_swap_conflict"
+            "on_compare_and_swap_conflict",
+            "steer_representation",
+            "steer_independent_branch_supported",
+            "tui_steer_branch_error"
           ],
           "properties": {
             "precondition": {
@@ -638,6 +641,15 @@
             },
             "on_compare_and_swap_conflict": {
               "type": "string"
+            },
+            "steer_representation": {
+              "const": "additional user message inside an existing turn"
+            },
+            "steer_independent_branch_supported": {
+              "const": false
+            },
+            "tui_steer_branch_error": {
+              "const": "the selected prompt is a steer and cannot be branched independently"
             }
           }
         },
