@@ -259,6 +259,15 @@ def from_legacy_maps(
         ("source_spec.extra.prompt_turn", "prompt_turn", "codex-rs/core/src/session/turn.rs", ("build_prompt", "model_visible_specs", "build_skills_and_plugins")),
         ("source_spec.extra.prompt_debug", "prompt_debug", "codex-rs/core/src/prompt_debug.rs", ("build_prompt_input_from_session", "capture_step_context", "for_prompt")),
     )
+    policy_specs = (
+        ("source_spec.extra.policy_protocol", "policy_protocol", "codex-rs/protocol/src/models.rs", ("pub enum PermissionProfile", "pub enum SandboxEnforcement", "pub struct ActivePermissionProfile")),
+        ("source_spec.extra.policy_permissions", "policy_permissions", "codex-rs/core/src/config/permissions.rs", ("default_builtin_permission_profile_name", "compile_permission_profile_selection", "resolve_permission_profile")),
+        ("source_spec.extra.policy_requirements", "policy_requirements", "codex-rs/config/src/config_requirements.rs", ("pub struct ConfigRequirements", "pub approval_policy", "pub permission_profile")),
+        ("source_spec.extra.policy_config_resolution", "policy_config_resolution", "codex-rs/core/src/config/mod.rs", ("resolve_effective_permission_selection", "resolve_default_permissions", "allowed_permission_profiles")),
+        ("source_spec.extra.policy_profile_state", "policy_profile_state", "codex-rs/core/src/config/resolved_permission_profile.rs", ("PermissionProfileState", "active_permission_profile", "profile_workspace_roots")),
+        ("source_spec.extra.policy_turn_context", "policy_turn_context", "codex-rs/core/src/session/turn_context.rs", ("fn approval_policy", "fn permission_profile", "fn allow_prefix_rules")),
+        ("source_spec.extra.policy_exec_policy", "policy_exec_policy", "codex-rs/core/src/exec_policy.rs", ("ExecApprovalRequest", "prompt_is_rejected_by_policy", "Decision::Forbidden")),
+    )
     specs.append(SourceSpec(
         id="source_spec.extra.generated_config_schema",
         legacy_key="generated_config_schema",
@@ -320,5 +329,19 @@ def from_legacy_maps(
             roles=("prompt_context",),
             expected_symbols=tuple(symbols),
             extractor_ids=("extractor.prompt_context",),
+        ))
+    existing_ids = {spec.id for spec in specs}
+    for spec_id, legacy_key, path, symbols in policy_specs:
+        if spec_id in existing_ids:
+            continue
+        specs.append(SourceSpec(
+            id=spec_id,
+            legacy_key=legacy_key,
+            group=SourceGroup.EXTRA,
+            path_candidates=(path,),
+            required=False,
+            roles=("execution_policy",),
+            expected_symbols=tuple(symbols),
+            extractor_ids=("extractor.execution_policy",),
         ))
     return SourceRegistry(specs)
