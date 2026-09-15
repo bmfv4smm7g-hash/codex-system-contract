@@ -19,6 +19,7 @@ codex-wire-audit-proof-diff = "codex_wire_audit.proof_diff:main"
 codex-wire-audit-proof = "codex_wire_audit.proof_gate:main"
 codex-wire-audit = "codex_wire_audit.cli:main"
 codex-wire-audit-history = "codex_wire_audit.history_cli:main"
+codex-wire-audit-runtime = "codex_wire_audit.runtime_conformance:main"
 
 [tool.setuptools]
 include-package-data = true

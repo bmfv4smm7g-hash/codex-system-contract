@@ -417,6 +417,51 @@
     },
     {
       "extractor_ids": [],
+      "id": "runtime_conformance",
+      "profile_assertions": {
+        "codex_wire_full": {
+          "required_dimensions_contains": [
+            "runtime_conformance"
+          ],
+          "required_runtime_scenarios_contains": [
+            "responses_http_request",
+            "responses_websocket_request",
+            "mcp_projection",
+            "response_error_event",
+            "redirect_headers",
+            "context_management_activation",
+            "context_window_rollover",
+            "history_notes_retrieval",
+            "config_schema_surface_graph"
+          ]
+        },
+        "runtime_conformance_only": {
+          "required_dimensions_contains": [
+            "runtime_conformance"
+          ],
+          "required_runtime_scenarios_contains": [
+            "responses_http_request",
+            "responses_websocket_request",
+            "mcp_projection",
+            "response_error_event",
+            "redirect_headers",
+            "context_management_activation",
+            "context_window_rollover",
+            "history_notes_retrieval",
+            "config_schema_surface_graph"
+          ]
+        }
+      },
+      "required_resources": [
+        "runtime_conformance.py",
+        "proof_gate.py",
+        "proof_schema_templates/runtime-conformance-evidence-v1.schema.json",
+        "coverage_profiles.v3.json"
+      ],
+      "status": "active_package"
+    },
+    {
+      "extractor_ids": [],
       "id": "canonical_system_contract",
       "profile_assertions": {
         "hybrid_v19": {

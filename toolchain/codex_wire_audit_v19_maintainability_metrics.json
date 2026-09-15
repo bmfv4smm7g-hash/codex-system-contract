@@ -1,16 +1,16 @@
 {
   "active_implementation": {
-    "function_count": 650,
+    "function_count": 669,
     "functions_over_200_lines": [],
     "functions_over_complexity_45": [],
     "internal_import_cycles": [],
-    "internal_import_edge_count": 201,
+    "internal_import_edge_count": 204,
     "largest_function": {
       "cyclomatic_complexity": 39,
       "file": "codex_wire_audit/proof_gate.py",
       "line_count": 199,
       "qualified_name": "build_attestation",
-      "start_line": 132
+      "start_line": 120
     },
     "largest_functions": [
       {
@@ -18,7 +18,7 @@
         "file": "codex_wire_audit/proof_gate.py",
         "line_count": 199,
         "qualified_name": "build_attestation",
-        "start_line": 132
+        "start_line": 120
       },
       {
         "cyclomatic_complexity": 14,
@@ -104,7 +104,7 @@
         "file": "codex_wire_audit/proof_gate.py",
         "line_count": 199,
         "qualified_name": "build_attestation",
-        "start_line": 132
+        "start_line": 120
       },
       {
         "cyclomatic_complexity": 39,
@@ -186,12 +186,12 @@
         "line_count": 496
       },
       {
-        "file": "codex_wire_audit/proof_gate.py",
-        "line_count": 494
-      },
-      {
         "file": "codex_wire_audit/extractors/app_server_rpc.py",
         "line_count": 488
+      },
+      {
+        "file": "codex_wire_audit/proof_gate.py",
+        "line_count": 480
       },
       {
         "file": "codex_wire_audit/source_registry.py",
@@ -203,7 +203,7 @@
       }
     ],
     "maximum_module_fan_out": 10,
-    "module_count": 79,
+    "module_count": 80,
     "modules_over_600_lines": [],
     "modules_over_fan_out_10": [],
     "most_complex_function": {
@@ -213,21 +213,21 @@
       "qualified_name": "verify_git_source",
       "start_line": 75
     },
-    "physical_line_count": 18810,
-    "source_sha256": "ee9b7d262375fce5493f16015c730dfc0868646289be329aa99489f43150fbe9"
+    "physical_line_count": 19224,
+    "source_sha256": "1dec940e4e9e30337d3ff44f1bce80d5cfa9cb0e1edcc12ace2a359d4f3adcad"
   },
   "active_package": {
-    "function_count": 515,
+    "function_count": 534,
     "functions_over_200_lines": [],
     "functions_over_complexity_45": [],
     "internal_import_cycles": [],
-    "internal_import_edge_count": 160,
+    "internal_import_edge_count": 163,
     "largest_function": {
       "cyclomatic_complexity": 39,
       "file": "codex_wire_audit/proof_gate.py",
       "line_count": 199,
       "qualified_name": "build_attestation",
-      "start_line": 132
+      "start_line": 120
     },
     "largest_functions": [
       {
@@ -235,7 +235,7 @@
         "file": "codex_wire_audit/proof_gate.py",
         "line_count": 199,
         "qualified_name": "build_attestation",
-        "start_line": 132
+        "start_line": 120
       },
       {
         "cyclomatic_complexity": 14,
@@ -321,7 +321,7 @@
         "file": "codex_wire_audit/proof_gate.py",
         "line_count": 199,
         "qualified_name": "build_attestation",
-        "start_line": 132
+        "start_line": 120
       },
       {
         "cyclomatic_complexity": 39,
@@ -399,12 +399,12 @@
         "line_count": 502
       },
       {
-        "file": "codex_wire_audit/proof_gate.py",
-        "line_count": 494
-      },
-      {
         "file": "codex_wire_audit/extractors/app_server_rpc.py",
         "line_count": 488
+      },
+      {
+        "file": "codex_wire_audit/proof_gate.py",
+        "line_count": 480
       },
       {
         "file": "codex_wire_audit/source_registry.py",
@@ -415,12 +415,12 @@
         "line_count": 449
       },
       {
-        "file": "codex_wire_audit/extractors/execution_policy.py",
-        "line_count": 397
+        "file": "codex_wire_audit/runtime_conformance.py",
+        "line_count": 428
       }
     ],
     "maximum_module_fan_out": 10,
-    "module_count": 67,
+    "module_count": 68,
     "modules_over_600_lines": [],
     "modules_over_fan_out_10": [],
     "most_complex_function": {
@@ -430,8 +430,8 @@
       "qualified_name": "verify_git_source",
       "start_line": 75
     },
-    "physical_line_count": 15463,
-    "source_sha256": "9706dc0c38eeb70d80fab944a18be45896394d7ce0fb64452c1a47c6caa19d7a"
+    "physical_line_count": 15877,
+    "source_sha256": "2d5e34ed2dab6457709b1da983c47121bb2de4f22fc3357e173b4b14233ddc72"
   },
   "active_release_tools": {
     "function_count": 135,
@@ -678,13 +678,13 @@
     "metadata_history_states": 19,
     "metadata_history_transitions": 9,
     "metadata_history_versions": 10,
-    "proof_schema_templates": 19,
+    "proof_schema_templates": 20,
     "registered_optional_sources": 126,
     "registered_required_sources": 16,
     "registered_source_specs": 142,
-    "regression_test_methods": 274,
+    "regression_test_methods": 287,
     "standalone_release_schemas": 1,
-    "strict_schema_templates": 28
+    "strict_schema_templates": 29
   },
   "metrics_schema_version": "3.0.0",
   "release": {
