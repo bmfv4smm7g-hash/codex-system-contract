@@ -6,6 +6,7 @@ on:
       - system-contract/fix/direct-authority
     paths:
       - .github/workflows/temporary-no-shim-hardening-20260910.yml
+      - .github/direct-contract-postprocess.py
   workflow_dispatch:
 
 permissions:
