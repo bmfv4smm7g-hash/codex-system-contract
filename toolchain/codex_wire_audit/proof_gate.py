@@ -16,6 +16,7 @@ from .proof_metadata_history import build_metadata_history_result
 from .proof_profiles import evaluate_profile, find_profile_id, resolve_profile
 from .proof_provenance import verify_git_source
 from .proof_schema_validation import report_sha256, validate_report, verify_attestation
+from .runtime_conformance import load_json_strict, validate_runtime_evidence
 from .rust_semantics import analyze_turn_metadata_source
 
 PROOF_FORMAT = "codex-wire-audit-proof-attestation/v2"
@@ -86,47 +87,34 @@ def _runtime_result(
     bag: DiagnosticBag,
 ) -> dict[str, Any]:
     profile = resolve_profile(profile_id)
-    required = set(profile.required_runtime_scenarios)
+    required = tuple(sorted(set(profile.required_runtime_scenarios)))
     if evidence is None:
         return {
             "status": "not_run",
             "complete": not required,
             "report_bound": False,
-            "required_scenarios": sorted(required),
+            "source_bound": False,
+            "required_scenarios": list(required),
             "passed_scenarios": [],
-            "missing_scenarios": sorted(required),
+            "missing_scenarios": list(required),
         }
 
-    scenarios = evidence.get("scenarios", [])
-    passed = {
-        item.get("id") for item in scenarios
-        if isinstance(item, dict) and item.get("status") == "passed" and isinstance(item.get("id"), str)
-    }
-    bound = evidence.get("report_sha256") == report_sha256(report)
-    missing = sorted(required - passed)
-    if not bound:
+    validation = validate_runtime_evidence(
+        evidence,
+        report,
+        profile_id=profile_id,
+        required_scenarios=required,
+    )
+    for diagnostic in validation.diagnostics:
         bag.add(ProofDiagnostic(
-            code="RUNTIME_EVIDENCE_REPORT_MISMATCH",
-            message="runtime evidence is not bound to this report digest",
+            code=diagnostic.code,
+            message=diagnostic.message,
+            source_id=diagnostic.source_id,
+            severity="error",
+            strict_failure=True,
+            recoverable=False,
         ))
-    for scenario in missing:
-        bag.add(ProofDiagnostic(
-            code="RUNTIME_SCENARIO_MISSING",
-            message=f"required runtime scenario did not pass: {scenario}",
-            source_id=scenario,
-        ))
-    complete = bound and not missing and evidence.get("status") == "complete"
-    return {
-        "status": "complete" if complete else "incomplete",
-        "complete": complete,
-        "report_bound": bound,
-        "required_scenarios": sorted(required),
-        "passed_scenarios": sorted(passed),
-        "missing_scenarios": missing,
-        "evidence_sha256": hashlib.sha256(
-            json.dumps(evidence, sort_keys=True, separators=(",", ":")).encode("utf-8")
-        ).hexdigest(),
-    }
+    return validation.proof_summary()
 
 
 def build_attestation(
@@ -417,9 +405,7 @@ def _main(argv: list[str] | None = None) -> int:
 
     runtime_evidence = None
     if args.runtime_evidence is not None:
-        runtime_evidence = json.loads(args.runtime_evidence.read_text(encoding="utf-8"))
-        if not isinstance(runtime_evidence, dict):
-            raise ValueError("runtime evidence root must be a JSON object")
+        runtime_evidence = load_json_strict(args.runtime_evidence)
 
     attestation = build_attestation(
         report,
