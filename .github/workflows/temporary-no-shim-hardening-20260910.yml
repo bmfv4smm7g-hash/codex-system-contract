@@ -49,18 +49,22 @@ jobs:
           test -f .github/direct-contract-migration-v2.py
           python - <<'PY'
           from pathlib import Path
+          import re
 
           path = Path('.github/direct-contract-migration-v2.py')
           text = path.read_text(encoding='utf-8')
-          old = '''    if victim not in unavailable:
-              unavailable.append(victim)
-          '''
-          new = '''    if victim not in unavailable:
-              unavailable[victim] = "test fixture intentionally unavailable"
-          '''
-          if old not in text:
-              raise SystemExit('expected unavailable_specs test mutation was not found')
-          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          pattern = re.compile(
+              r'(?m)^(?P<indent>[ \t]*)if victim not in unavailable:\n'
+              r'(?P=indent)    unavailable\.append\(victim\)'
+          )
+          replacement = (
+              r'\g<indent>if victim not in unavailable:\n'
+              r'\g<indent>    unavailable[victim] = "test fixture intentionally unavailable"'
+          )
+          text, count = pattern.subn(replacement, text, count=1)
+          if count != 1:
+              raise SystemExit(f'expected one unavailable_specs mutation, found {count}')
+          path.write_text(text, encoding='utf-8')
           PY
           python .github/direct-contract-migration-v2.py
           rm -f .github/direct-contract-migration-v2.py
@@ -75,25 +79,25 @@ jobs:
           set -euo pipefail
           python - <<'PY'
           from pathlib import Path
+          import re
 
           path = Path('LOCAL_STORAGE_AND_ROLLOUT_LAYOUT.md')
           text = path.read_text(encoding='utf-8')
-          old = '''Generated reports expose the contract in two places:
-
-          ```text
-          report.local_storage_schema
-          report.evolution_contract.extractors["extractor.local_storage"].data
-          ```
-          '''
-          new = '''Generated reports expose the contract once:
-
-          ```text
-          report.system_contract.model.extractors["extractor.local_storage"].data
-          ```
-          '''
-          if old not in text:
-              raise SystemExit('expected duplicate local-storage report paths were not found')
-          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          pattern = re.compile(
+              r'Generated reports expose the contract in two places:\n\n'
+              r'```text\nreport\.local_storage_schema\n'
+              r'report\.evolution_contract\.extractors\["extractor\.local_storage"\]\.data\n```\n'
+          )
+          replacement = (
+              'Generated reports expose the contract once:\n\n'
+              '```text\n'
+              'report.system_contract.model.extractors["extractor.local_storage"].data\n'
+              '```\n'
+          )
+          text, count = pattern.subn(replacement, text, count=1)
+          if count != 1:
+              raise SystemExit(f'expected one duplicate local-storage report section, found {count}')
+          path.write_text(text, encoding='utf-8')
           PY
 
       - name: Enforce no compatibility shim or transitional publisher
