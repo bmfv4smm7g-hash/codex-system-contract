@@ -1,17 +1,24 @@
-"""Canonical extractor registry and built-in extractor activation."""
+"""Canonical extractor registry and deterministic built-in activation."""
+
+from importlib import import_module
 
 from .registry import Extractor, ExtractorResult, create_extractors, register_extractor
 
-# Register built-ins only after the independent registry module is initialized.
-from . import turn_metadata as _turn_metadata  # noqa: E402,F401
-from . import context_management as _context_management  # noqa: E402,F401
-from . import config_effects as _config_effects  # noqa: E402,F401
-from . import local_storage as _local_storage  # noqa: E402,F401
-from . import prompt_context as _prompt_context  # noqa: E402,F401
-from . import execution_policy as _execution_policy  # noqa: E402,F401
-from . import plugin_runtime as _plugin_runtime  # noqa: E402,F401
-from . import execution_environment as _execution_environment  # noqa: E402,F401
-from . import routing_transport as _routing_transport  # noqa: E402,F401
+_BUILTIN_MODULES = (
+    "turn_metadata",
+    "context_management",
+    "config_effects",
+    "local_storage",
+    "prompt_context",
+    "execution_policy",
+    "plugin_runtime",
+    "execution_environment",
+    "routing_transport",
+    "mcp_projection",
+)
+for _module_name in _BUILTIN_MODULES:
+    import_module(f"{__name__}.{_module_name}")
+del _module_name
 
 __all__ = [
     "Extractor",

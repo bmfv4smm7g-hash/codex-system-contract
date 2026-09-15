@@ -180,6 +180,43 @@ def _append_optional_specs(
         existing_ids.add(spec_id)
 
 
+def _merge_optional_specs(
+    specs: list[SourceSpec],
+    rows: Iterable[tuple[str, str, str, tuple[str, ...]]],
+    *,
+    role: str,
+    extractor_id: str,
+) -> None:
+    positions = {spec.id: index for index, spec in enumerate(specs)}
+    for spec_id, legacy_key, path, symbols in rows:
+        index = positions.get(spec_id)
+        if index is None:
+            specs.append(SourceSpec(
+                id=spec_id,
+                legacy_key=legacy_key,
+                group=SourceGroup.EXTRA,
+                path_candidates=(path,),
+                required=False,
+                roles=(role,),
+                expected_symbols=tuple(symbols),
+                extractor_ids=(extractor_id,),
+            ))
+            positions[spec_id] = len(specs) - 1
+            continue
+        current = specs[index]
+        specs[index] = SourceSpec(
+            id=current.id,
+            legacy_key=current.legacy_key,
+            group=current.group,
+            path_candidates=current.path_candidates,
+            required=current.required,
+            roles=tuple(dict.fromkeys((*current.roles, role))),
+            expected_symbols=tuple(dict.fromkeys((*current.expected_symbols, *symbols))),
+            extractor_ids=tuple(sorted(set((*current.extractor_ids, extractor_id)))),
+            exclusion_reason=current.exclusion_reason,
+        )
+
+
 def from_legacy_maps(
     base_files: Mapping[str, str],
     surface_files: Mapping[str, str],
@@ -316,6 +353,14 @@ def from_legacy_maps(
         ("source_spec.extra.routing_requirements", "routing_requirements", "codex-rs/config/src/config_requirements.rs", ("NetworkRequirementsToml", "managed_allowed_domains_only", "header_injections")),
         ("source_spec.extra.routing_outbound_proxy", "routing_outbound_proxy", "codex-rs/http-client/src/outbound_proxy.rs", ("OutboundProxyPolicy", "HttpClientFactory", "resolve_proxy_route")),
     )
+    mcp_specs = (
+        ("source_spec.extra.mcp_catalog", "mcp_catalog", "codex-rs/codex-mcp/src/catalog.rs", ("McpServerSource", "McpCatalogBuilder", "ResolvedMcpCatalog")),
+        ("source_spec.extra.mcp_runtime", "mcp_runtime", "codex-rs/codex-mcp/src/mcp/mod.rs", ("McpConfig", "effective_mcp_servers", "ToolPluginProvenance")),
+        ("source_spec.extra.mcp_tools", "mcp_tools", "codex-rs/codex-mcp/src/tools.rs", ("ToolInfo", "ToolFilter", "normalize_tools_for_model_with_prefix")),
+        ("source_spec.extra.mcp_tool_exposure", "mcp_tool_exposure", "codex-rs/core/src/mcp_tool_exposure.rs", ("McpHandlerCache", "append_mcp_tools", "tool_is_model_visible")),
+        ("source_spec.extra.mcp_tool_plan", "mcp_tool_plan", "codex-rs/core/src/tools/spec_plan.rs", ("build_tool_router", "apply_mcp_tool_exposure_policy", "omit_tools_from")),
+        ("source_spec.extra.mcp_handler", "mcp_handler", "codex-rs/core/src/tools/handlers/mcp.rs", ("McpHandler", "prepare_mcp_call", "handle_mcp_tool_call")),
+    )
     specs.append(SourceSpec(
         id="source_spec.extra.generated_config_schema",
         legacy_key="generated_config_schema",
@@ -362,5 +407,11 @@ def from_legacy_maps(
         routing_specs,
         role="routing_transport",
         extractor_id="extractor.routing_transport",
+    )
+    _merge_optional_specs(
+        specs,
+        mcp_specs,
+        role="mcp_projection",
+        extractor_id="extractor.mcp_projection",
     )
     return SourceRegistry(specs)

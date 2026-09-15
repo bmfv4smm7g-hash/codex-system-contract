@@ -1,11 +1,11 @@
 {
   "counts": {
     "base": 16,
-    "extra": 93,
-    "optional": 119,
+    "extra": 96,
+    "optional": 122,
     "required": 16,
     "surface": 26,
-    "total": 135
+    "total": 138
   },
   "schema_version": "1.0.0",
   "sources": {
@@ -1111,8 +1111,14 @@
       ]
     },
     "source_spec.extra.mcp_catalog": {
-      "expected_symbols": [],
-      "extractor_ids": [],
+      "expected_symbols": [
+        "McpServerSource",
+        "McpCatalogBuilder",
+        "ResolvedMcpCatalog"
+      ],
+      "extractor_ids": [
+        "extractor.mcp_projection"
+      ],
       "group": "extra",
       "id": "source_spec.extra.mcp_catalog",
       "legacy_key": "mcp_catalog",
@@ -1121,12 +1127,19 @@
       ],
       "required": false,
       "roles": [
-        "legacy_extra"
+        "legacy_extra",
+        "mcp_projection"
       ]
     },
     "source_spec.extra.mcp_handler": {
-      "expected_symbols": [],
-      "extractor_ids": [],
+      "expected_symbols": [
+        "McpHandler",
+        "prepare_mcp_call",
+        "handle_mcp_tool_call"
+      ],
+      "extractor_ids": [
+        "extractor.mcp_projection"
+      ],
       "group": "extra",
       "id": "source_spec.extra.mcp_handler",
       "legacy_key": "mcp_handler",
@@ -1135,7 +1148,8 @@
       ],
       "required": false,
       "roles": [
-        "legacy_extra"
+        "legacy_extra",
+        "mcp_projection"
       ]
     },
     "source_spec.extra.mcp_http_headers": {
@@ -1167,8 +1181,14 @@
       ]
     },
     "source_spec.extra.mcp_runtime": {
-      "expected_symbols": [],
-      "extractor_ids": [],
+      "expected_symbols": [
+        "McpConfig",
+        "effective_mcp_servers",
+        "ToolPluginProvenance"
+      ],
+      "extractor_ids": [
+        "extractor.mcp_projection"
+      ],
       "group": "extra",
       "id": "source_spec.extra.mcp_runtime",
       "legacy_key": "mcp_runtime",
@@ -1177,7 +1197,8 @@
       ],
       "required": false,
       "roles": [
-        "legacy_extra"
+        "legacy_extra",
+        "mcp_projection"
       ]
     },
     "source_spec.extra.mcp_tool_call": {
@@ -1192,6 +1213,66 @@
       "required": false,
       "roles": [
         "legacy_extra"
+      ]
+    },
+    "source_spec.extra.mcp_tool_exposure": {
+      "expected_symbols": [
+        "McpHandlerCache",
+        "append_mcp_tools",
+        "tool_is_model_visible"
+      ],
+      "extractor_ids": [
+        "extractor.mcp_projection"
+      ],
+      "group": "extra",
+      "id": "source_spec.extra.mcp_tool_exposure",
+      "legacy_key": "mcp_tool_exposure",
+      "path_candidates": [
+        "codex-rs/core/src/mcp_tool_exposure.rs"
+      ],
+      "required": false,
+      "roles": [
+        "mcp_projection"
+      ]
+    },
+    "source_spec.extra.mcp_tool_plan": {
+      "expected_symbols": [
+        "build_tool_router",
+        "apply_mcp_tool_exposure_policy",
+        "omit_tools_from"
+      ],
+      "extractor_ids": [
+        "extractor.mcp_projection"
+      ],
+      "group": "extra",
+      "id": "source_spec.extra.mcp_tool_plan",
+      "legacy_key": "mcp_tool_plan",
+      "path_candidates": [
+        "codex-rs/core/src/tools/spec_plan.rs"
+      ],
+      "required": false,
+      "roles": [
+        "mcp_projection"
+      ]
+    },
+    "source_spec.extra.mcp_tools": {
+      "expected_symbols": [
+        "ToolInfo",
+        "ToolFilter",
+        "normalize_tools_for_model_with_prefix"
+      ],
+      "extractor_ids": [
+        "extractor.mcp_projection"
+      ],
+      "group": "extra",
+      "id": "source_spec.extra.mcp_tools",
+      "legacy_key": "mcp_tools",
+      "path_candidates": [
+        "codex-rs/codex-mcp/src/tools.rs"
+      ],
+      "required": false,
+      "roles": [
+        "mcp_projection"
       ]
     },
     "source_spec.extra.mcp_types": {

@@ -313,6 +313,35 @@
       "status": "active_package"
     },
     {
+      "extractor_ids": [
+        "extractor.mcp_projection"
+      ],
+      "id": "mcp_projection",
+      "profile_assertions": {
+        "codex_wire_full": {
+          "required_extractors_contains": [
+            "extractor.mcp_projection"
+          ]
+        },
+        "hybrid_v19": {
+          "required_extractors_contains": [
+            "extractor.mcp_projection"
+          ]
+        },
+        "mcp_only": {
+          "required_extractors_contains": [
+            "extractor.mcp_projection"
+          ]
+        }
+      },
+      "required_resources": [
+        "extractors/mcp_projection.py",
+        "proof_schema_templates/mcp-projection-semantics-v1.schema.json",
+        "coverage_profiles.v3.json"
+      ],
+      "status": "active_package"
+    },
+    {
       "extractor_ids": [],
       "id": "canonical_system_contract",
       "profile_assertions": {
@@ -325,7 +354,8 @@
             "extractor.execution_policy",
             "extractor.plugin_runtime",
             "extractor.execution_environment",
-            "extractor.routing_transport"
+            "extractor.routing_transport",
+            "extractor.mcp_projection"
           ]
         }
       },
