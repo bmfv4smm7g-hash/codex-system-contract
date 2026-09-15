@@ -1,5 +1,6 @@
 name: plugin-domain-maintenance
 
+# v2: profile-scoped patch helper
 on:
   push:
     branches:
