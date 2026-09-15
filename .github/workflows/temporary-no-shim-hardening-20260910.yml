@@ -168,7 +168,7 @@ jobs:
           path.write_text(text, encoding='utf-8')
           PY
 
-      - name: Enforce no compatibility shim or transitional publisher
+      - name: Enforce direct authority at the public boundary
         shell: bash
         run: |
           set -euo pipefail
@@ -177,14 +177,15 @@ jobs:
           test ! -e .github/workflows/review-canonical-source.yml
           python - <<'PY'
           from __future__ import annotations
+
           import ast
           from pathlib import Path
 
           root = Path('toolchain/codex_wire_audit')
-          forbidden_modules = {'compatibility_views'}
-          forbidden_report_keys = {
-              'evolution_contract', 'local_storage_schema', 'config_schema',
-              'config_surface_graph', 'config_protocol',
+          removed_symbols = {
+              'compatibility_views',
+              'apply_config_surface_overlay',
+              'apply_local_storage_overlay',
           }
           violations: list[str] = []
           for path in sorted(root.rglob('*.py')):
@@ -194,25 +195,55 @@ jobs:
                   violations.append(f'{path}: syntax error: {error}')
                   continue
               for node in ast.walk(tree):
-                  if isinstance(node, ast.ImportFrom) and node.module:
-                      if node.module.rsplit('.', 1)[-1] in forbidden_modules:
+                  if isinstance(node, ast.ImportFrom):
+                      module = node.module or ''
+                      if module.rsplit('.', 1)[-1] == 'compatibility_views':
                           violations.append(f'{path}:{node.lineno}: imports compatibility shim')
+                      for alias in node.names:
+                          if alias.name in removed_symbols:
+                              violations.append(f'{path}:{node.lineno}: imports removed symbol {alias.name}')
                   elif isinstance(node, ast.Import):
                       for alias in node.names:
-                          if alias.name.rsplit('.', 1)[-1] in forbidden_modules:
-                              violations.append(f'{path}:{node.lineno}: imports compatibility shim')
-                  elif isinstance(node, (ast.Subscript, ast.Constant)):
-                      value = None
-                      if isinstance(node, ast.Constant) and isinstance(node.value, str):
-                          value = node.value
-                      elif isinstance(node, ast.Subscript):
-                          slice_node = node.slice
-                          if isinstance(slice_node, ast.Constant) and isinstance(slice_node.value, str):
-                              value = slice_node.value
-                      if value in forbidden_report_keys:
-                          violations.append(f'{path}:{getattr(node, "lineno", 0)}: legacy report key {value!r}')
+                          if alias.name.rsplit('.', 1)[-1] in removed_symbols:
+                              violations.append(f'{path}:{node.lineno}: imports removed symbol {alias.name}')
+                  elif isinstance(node, ast.Name) and node.id in removed_symbols:
+                      violations.append(f'{path}:{node.lineno}: references removed symbol {node.id}')
           if violations:
               raise SystemExit('\n'.join(violations))
+          PY
+          python - <<'PY'
+          from __future__ import annotations
+
+          import copy
+          import json
+          from pathlib import Path
+
+          from codex_wire_audit.system_contract import attach_system_contract, build_system_contract
+          from codex_wire_audit.system_contract_validation import validate_system_contract
+
+          fixture = json.loads(
+              Path('contracts/codex-system-contract/v1/example.fixture.json').read_text(encoding='utf-8')
+          )
+          model = fixture['model']
+          contract = build_system_contract(model)
+          expected = {'$schema', 'schema', 'authority', 'model', 'integrity'}
+          if set(contract) != expected:
+              raise SystemExit(f'unexpected direct contract keys: {sorted(contract)}')
+          validate_system_contract(contract)
+
+          report = {'evolution_contract': copy.deepcopy(model), 'diagnostics': []}
+          attach_system_contract(report)
+          if set(report) != {'system_contract', 'diagnostics'}:
+              raise SystemExit(f'construction model leaked into report: {sorted(report)}')
+          validate_system_contract(report['system_contract'], report=report)
+
+          for key in ('config_schema', 'config_surface_graph', 'local_storage_schema'):
+              candidate = {'evolution_contract': copy.deepcopy(model), key: {}}
+              try:
+                  attach_system_contract(candidate)
+              except ValueError:
+                  continue
+              raise SystemExit(f'parallel public representation was accepted: {key}')
           PY
 
       - name: Generate deterministic assets
