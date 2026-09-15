@@ -1200,8 +1200,14 @@
       ]
     },
     "source_spec.extra.mcp_http_headers": {
-      "expected_symbols": [],
-      "extractor_ids": [],
+      "expected_symbols": [
+        "HttpHeadersProvider",
+        "HttpHeadersClient",
+        "with_http_headers_helper"
+      ],
+      "extractor_ids": [
+        "extractor.redirect_headers"
+      ],
       "group": "extra",
       "id": "source_spec.extra.mcp_http_headers",
       "legacy_key": "mcp_http_headers",
@@ -1210,12 +1216,19 @@
       ],
       "required": false,
       "roles": [
-        "legacy_extra"
+        "legacy_extra",
+        "redirect_headers"
       ]
     },
     "source_spec.extra.mcp_http_redirect": {
-      "expected_symbols": [],
-      "extractor_ids": [],
+      "expected_symbols": [
+        "SameOriginRedirectHttpClient",
+        "MAX_REDIRECTS",
+        "HttpRedirectPolicy::Stop"
+      ],
+      "extractor_ids": [
+        "extractor.redirect_headers"
+      ],
       "group": "extra",
       "id": "source_spec.extra.mcp_http_redirect",
       "legacy_key": "mcp_http_redirect",
@@ -1224,7 +1237,8 @@
       ],
       "required": false,
       "roles": [
-        "legacy_extra"
+        "legacy_extra",
+        "redirect_headers"
       ]
     },
     "source_spec.extra.mcp_runtime": {
@@ -1888,8 +1902,14 @@
       ]
     },
     "source_spec.extra.route_aware_redirect": {
-      "expected_symbols": [],
-      "extractor_ids": [],
+      "expected_symbols": [
+        "redirect_request",
+        "remove_sensitive_headers",
+        "insert_referer"
+      ],
+      "extractor_ids": [
+        "extractor.redirect_headers"
+      ],
       "group": "extra",
       "id": "source_spec.extra.route_aware_redirect",
       "legacy_key": "route_aware_redirect",
@@ -1898,7 +1918,8 @@
       ],
       "required": false,
       "roles": [
-        "legacy_extra"
+        "legacy_extra",
+        "redirect_headers"
       ]
     },
     "source_spec.extra.routing_outbound_proxy": {

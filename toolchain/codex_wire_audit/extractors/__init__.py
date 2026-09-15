@@ -14,6 +14,7 @@ _BUILTIN_MODULES = (
     "plugin_runtime",
     "execution_environment",
     "routing_transport",
+    "redirect_headers",
     "mcp_projection",
     "responses_protocol",
 )

@@ -217,6 +217,27 @@ def _merge_optional_specs(
         )
 
 
+_ROUTING_TRANSPORT_SPECS = (
+    ("source_spec.extra.routing_proxy_spec", "routing_proxy_spec", "codex-rs/core/src/config/network_proxy_spec.rs", ("NetworkProxySpec", "start_proxy", "environment_policy")),
+    ("source_spec.extra.routing_proxy_config", "routing_proxy_config", "codex-rs/network-proxy/src/config.rs", ("NetworkProxyConfig", "NetworkMode", "resolve_runtime")),
+    ("source_spec.extra.routing_requirements", "routing_requirements", "codex-rs/config/src/config_requirements.rs", ("NetworkRequirementsToml", "managed_allowed_domains_only", "header_injections")),
+    ("source_spec.extra.routing_outbound_proxy", "routing_outbound_proxy", "codex-rs/http-client/src/outbound_proxy.rs", ("OutboundProxyPolicy", "HttpClientFactory", "resolve_proxy_route")),
+)
+
+_REDIRECT_HEADER_SPECS = (
+    ("source_spec.extra.route_aware_redirect", "route_aware_redirect", "codex-rs/http-client/src/route_aware_redirect.rs", ("redirect_request", "remove_sensitive_headers", "insert_referer")),
+    ("source_spec.extra.mcp_http_redirect", "mcp_http_redirect", "codex-rs/rmcp-client/src/http_client_redirect.rs", ("SameOriginRedirectHttpClient", "MAX_REDIRECTS", "HttpRedirectPolicy::Stop")),
+    ("source_spec.extra.mcp_http_headers", "mcp_http_headers", "codex-rs/rmcp-client/src/http_headers.rs", ("HttpHeadersProvider", "HttpHeadersClient", "with_http_headers_helper")),
+)
+
+def _merge_routing_domain_specs(specs: list[SourceSpec]) -> None:
+    for rows, role, extractor_id in (
+        (_ROUTING_TRANSPORT_SPECS, "routing_transport", "extractor.routing_transport"),
+        (_REDIRECT_HEADER_SPECS, "redirect_headers", "extractor.redirect_headers"),
+    ):
+        _merge_optional_specs(specs, rows, role=role, extractor_id=extractor_id)
+
+
 _MCP_SPECS = (
     ("source_spec.extra.mcp_catalog", "mcp_catalog", "codex-rs/codex-mcp/src/catalog.rs", ("McpServerSource", "McpCatalogBuilder", "ResolvedMcpCatalog")),
     ("source_spec.extra.mcp_runtime", "mcp_runtime", "codex-rs/codex-mcp/src/mcp/mod.rs", ("McpConfig", "effective_mcp_servers", "ToolPluginProvenance")),
@@ -383,12 +404,6 @@ def from_legacy_maps(
         ("source_spec.extra.environment_manager", "environment_manager", "codex-rs/exec-server/src/environment.rs", ("EnvironmentManager", "EnvironmentObservedStatus", "default_environment_ids")),
         ("source_spec.extra.environment_turn_context", "environment_turn_context", "codex-rs/core/src/session/turn_context.rs", ("TurnEnvironment", "shell_environment_policy", "workspace_roots")),
     )
-    routing_specs = (
-        ("source_spec.extra.routing_proxy_spec", "routing_proxy_spec", "codex-rs/core/src/config/network_proxy_spec.rs", ("NetworkProxySpec", "start_proxy", "environment_policy")),
-        ("source_spec.extra.routing_proxy_config", "routing_proxy_config", "codex-rs/network-proxy/src/config.rs", ("NetworkProxyConfig", "NetworkMode", "resolve_runtime")),
-        ("source_spec.extra.routing_requirements", "routing_requirements", "codex-rs/config/src/config_requirements.rs", ("NetworkRequirementsToml", "managed_allowed_domains_only", "header_injections")),
-        ("source_spec.extra.routing_outbound_proxy", "routing_outbound_proxy", "codex-rs/http-client/src/outbound_proxy.rs", ("OutboundProxyPolicy", "HttpClientFactory", "resolve_proxy_route")),
-    )
     specs.append(SourceSpec(
         id="source_spec.extra.generated_config_schema",
         legacy_key="generated_config_schema",
@@ -430,11 +445,6 @@ def from_legacy_maps(
         role="execution_environment",
         extractor_id="extractor.execution_environment",
     )
-    _append_optional_specs(
-        specs,
-        routing_specs,
-        role="routing_transport",
-        extractor_id="extractor.routing_transport",
-    )
+    _merge_routing_domain_specs(specs)
     _merge_protocol_domain_specs(specs)
     return SourceRegistry(specs)

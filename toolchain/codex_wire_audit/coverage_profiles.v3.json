@@ -100,7 +100,7 @@
     },
     {
       "allow_legacy_reconstruction": true,
-      "description": "Transition profile: canonical generated config schema, config-to-surface graph, turn metadata, context management, prompt/context composition, execution authority, plugin runtime capabilities, execution-environment context, routing/proxy transport, MCP tool projection, and Responses request/Lite/event semantics; remaining protocol families may still use the frozen legacy adapter.",
+      "description": "Transition profile: canonical generated config schema, config-to-surface graph, turn metadata, context management, prompt/context composition, execution authority, plugin runtime capabilities, execution-environment context, routing/proxy transport and redirect/header replay, MCP tool projection, and Responses request/Lite/event semantics; remaining protocol families may still use the frozen legacy adapter.",
       "id": "hybrid_v19",
       "required_dimensions": [
         "schema",
@@ -121,7 +121,8 @@
         "extractor.mcp_projection",
         "extractor.responses_request",
         "extractor.responses_lite",
-        "extractor.response_events"
+        "extractor.response_events",
+        "extractor.redirect_headers"
       ],
       "required_history_keys": [
         "key.turn_metadata.code_mode_tool_names",
@@ -402,7 +403,7 @@
     },
     {
       "allow_legacy_reconstruction": false,
-      "description": "Focused source-derived routing/proxy proof without claiming permission authority, environment construction, provider protocol semantics, or plugin/MCP capabilities.",
+      "description": "Focused source-derived routing/proxy/redirect-header proof without claiming permission authority, environment construction, provider protocol semantics, or plugin/MCP capability ownership.",
       "id": "routing_transport_only",
       "required_dimensions": [
         "schema",
@@ -410,7 +411,8 @@
         "provenance"
       ],
       "required_extractors": [
-        "extractor.routing_transport"
+        "extractor.routing_transport",
+        "extractor.redirect_headers"
       ],
       "required_history_keys": [],
       "required_runtime_scenarios": [],
