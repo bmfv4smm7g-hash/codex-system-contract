@@ -97,7 +97,6 @@ def _effect_links(
     )
 
 
-
 def _validate_semantics(
     diagnostics: DiagnosticCollector,
     *,
@@ -307,19 +306,19 @@ class ConfigEffectsExtractor:
         frozen_legacy = set(legacy_compatibility_settings())
         missing_legacy = sorted(frozen_legacy - set(covered_legacy))
         complete = _validate_semantics(
-    diagnostics,
-    catalog=catalog,
-    registry=registry,
-    schema_policy=schema_policy,
-    crosswalk=crosswalk,
-    missing_effect_paths=missing_effect_paths,
-    missing_effect_anchors=missing_effect_anchors,
-    missing_legacy=missing_legacy,
-    effect_sources=effect_sources,
-    schema_source=schema_source,
-    registry_source=registry_source,
-    schema_generator_source=schema_generator_source,
-)
+            diagnostics,
+            catalog=catalog,
+            registry=registry,
+            schema_policy=schema_policy,
+            crosswalk=crosswalk,
+            missing_effect_paths=missing_effect_paths,
+            missing_effect_anchors=missing_effect_anchors,
+            missing_legacy=missing_legacy,
+            effect_sources=effect_sources,
+            schema_source=schema_source,
+            registry_source=registry_source,
+            schema_generator_source=schema_generator_source,
+        )
 
         data: dict[str, Any] = {
             "$schema": "https://schemas.codex-wire-audit.invalid/v19/config-surface-semantics-v1.schema.json",
