@@ -100,7 +100,7 @@
     },
     {
       "allow_legacy_reconstruction": true,
-      "description": "Transition profile: canonical generated config schema, config-to-surface graph, turn metadata, context management, prompt/context composition, execution authority, plugin runtime capabilities, execution-environment context, and routing/proxy transport; remaining protocol families may still use the frozen legacy adapter.",
+      "description": "Transition profile: canonical generated config schema, config-to-surface graph, turn metadata, context management, prompt/context composition, execution authority, plugin runtime capabilities, execution-environment context, routing/proxy transport, and MCP tool projection; remaining protocol families may still use the frozen legacy adapter.",
       "id": "hybrid_v19",
       "required_dimensions": [
         "schema",
@@ -117,7 +117,8 @@
         "extractor.execution_policy",
         "extractor.plugin_runtime",
         "extractor.execution_environment",
-        "extractor.routing_transport"
+        "extractor.routing_transport",
+        "extractor.mcp_projection"
       ],
       "required_history_keys": [
         "key.turn_metadata.code_mode_tool_names",

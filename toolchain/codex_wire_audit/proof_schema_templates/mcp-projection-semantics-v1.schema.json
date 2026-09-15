@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.codex-system-contract.invalid/mcp/mcp-projection-semantics-v1.schema.json",
+  "title": "Codex MCP projection semantics",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "schema_version",
+    "ownership",
+    "catalog",
+    "runtime",
+    "tool_identity",
+    "exposure",
+    "execution",
+    "evidence",
+    "semantic_complete",
+    "semantic_digest"
+  ],
+  "properties": {
+    "$schema": {"const": "https://schemas.codex-system-contract.invalid/mcp/mcp-projection-semantics-v1.schema.json"},
+    "schema_version": {"const": "1.0.0"},
+    "ownership": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["owns", "does_not_own"],
+      "properties": {
+        "owns": {"type": "array", "items": {"type": "string"}, "minItems": 1, "uniqueItems": true},
+        "does_not_own": {"type": "array", "items": {"type": "string"}, "minItems": 1, "uniqueItems": true}
+      }
+    },
+    "catalog": {"$ref": "#/$defs/semanticSection"},
+    "runtime": {"$ref": "#/$defs/semanticSection"},
+    "tool_identity": {"$ref": "#/$defs/semanticSection"},
+    "exposure": {"$ref": "#/$defs/semanticSection"},
+    "execution": {"$ref": "#/$defs/semanticSection"},
+    "evidence": {
+      "type": "object",
+      "minProperties": 6,
+      "additionalProperties": {"$ref": "#/$defs/evidence"}
+    },
+    "semantic_complete": {"type": "boolean"},
+    "semantic_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "$defs": {
+    "semanticSection": {
+      "type": "object",
+      "minProperties": 2,
+      "additionalProperties": true
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_spec_id", "path", "sha256", "git_blob_sha", "symbol"],
+      "properties": {
+        "source_spec_id": {"type": "string", "minLength": 1},
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "git_blob_sha": {"type": ["string", "null"]},
+        "symbol": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}
