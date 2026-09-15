@@ -105,6 +105,7 @@ jobs:
           python -m pytest -q tests/test_config_surface_v19.py test_codex_wire_audit_v11.py
           python -m pytest -q
           make legacy-assets
+          python tools/check_canonical_contract.py --write-assets
           python tools/maintainability_metrics.py --write
           python -m pytest -q tests/test_release_pipeline_v18.py::test_release_pipeline_is_series_driven_and_tooling_is_budgeted
           make check-assets
@@ -123,6 +124,7 @@ jobs:
             toolchain/codex_wire_audit/schema_templates/evolution-contract.schema.json \
             toolchain/codex_wire_audit_v11_schemas/evolution-contract.schema.json \
             contracts/codex-system-contract/v1/schema.json \
+            contracts/codex-system-contract/v1/example.fixture.json \
             toolchain/tests/test_config_surface_v19.py \
             toolchain/test_codex_wire_audit_v11.py \
             toolchain/codex_wire_audit_v11_examples \
