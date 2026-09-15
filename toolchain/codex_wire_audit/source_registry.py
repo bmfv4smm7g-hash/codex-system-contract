@@ -156,6 +156,30 @@ def _spec_id(group: SourceGroup, key: str) -> str:
     return f"source_spec.{group.value}.{safe}"
 
 
+def _append_optional_specs(
+    specs: list[SourceSpec],
+    rows: Iterable[tuple[str, str, str, tuple[str, ...]]],
+    *,
+    role: str,
+    extractor_id: str,
+) -> None:
+    existing_ids = {spec.id for spec in specs}
+    for spec_id, legacy_key, path, symbols in rows:
+        if spec_id in existing_ids:
+            continue
+        specs.append(SourceSpec(
+            id=spec_id,
+            legacy_key=legacy_key,
+            group=SourceGroup.EXTRA,
+            path_candidates=(path,),
+            required=False,
+            roles=(role,),
+            expected_symbols=tuple(symbols),
+            extractor_ids=(extractor_id,),
+        ))
+        existing_ids.add(spec_id)
+
+
 def from_legacy_maps(
     base_files: Mapping[str, str],
     surface_files: Mapping[str, str],
@@ -298,74 +322,19 @@ def from_legacy_maps(
         expected_symbols=("features_schema", "Feature::Artifact", "Feature::GuardianThreadContext"),
         extractor_ids=("extractor.config_effects",),
     ))
-    existing_ids = {spec.id for spec in specs}
-    for spec_id, legacy_key, path, symbols in context_specs:
-        if spec_id in existing_ids:
-            continue
-        specs.append(SourceSpec(
-            id=spec_id,
-            legacy_key=legacy_key,
-            group=SourceGroup.EXTRA,
-            path_candidates=(path,),
-            required=False,
-            roles=("context_management",),
-            expected_symbols=tuple(symbols),
-            extractor_ids=("extractor.context_management",),
-        ))
-    existing_ids = {spec.id for spec in specs}
-    for spec_id, legacy_key, path, symbols in local_storage_specs:
-        if spec_id in existing_ids:
-            continue
-        specs.append(SourceSpec(
-            id=spec_id,
-            legacy_key=legacy_key,
-            group=SourceGroup.EXTRA,
-            path_candidates=(path,),
-            required=False,
-            roles=("local_storage",),
-            expected_symbols=tuple(symbols),
-            extractor_ids=("extractor.local_storage",),
-        ))
-    existing_ids = {spec.id for spec in specs}
-    for spec_id, legacy_key, path, symbols in prompt_specs:
-        if spec_id in existing_ids:
-            continue
-        specs.append(SourceSpec(
-            id=spec_id,
-            legacy_key=legacy_key,
-            group=SourceGroup.EXTRA,
-            path_candidates=(path,),
-            required=False,
-            roles=("prompt_context",),
-            expected_symbols=tuple(symbols),
-            extractor_ids=("extractor.prompt_context",),
-        ))
-    existing_ids = {spec.id for spec in specs}
-    for spec_id, legacy_key, path, symbols in policy_specs:
-        if spec_id in existing_ids:
-            continue
-        specs.append(SourceSpec(
-            id=spec_id,
-            legacy_key=legacy_key,
-            group=SourceGroup.EXTRA,
-            path_candidates=(path,),
-            required=False,
-            roles=("execution_policy",),
-            expected_symbols=tuple(symbols),
-            extractor_ids=("extractor.execution_policy",),
-        ))
-    existing_ids = {spec.id for spec in specs}
-    for spec_id, legacy_key, path, symbols in plugin_specs:
-        if spec_id in existing_ids:
-            continue
-        specs.append(SourceSpec(
-            id=spec_id,
-            legacy_key=legacy_key,
-            group=SourceGroup.EXTRA,
-            path_candidates=(path,),
-            required=False,
-            roles=("plugin_runtime",),
-            expected_symbols=tuple(symbols),
-            extractor_ids=("extractor.plugin_runtime",),
-        ))
+    _append_optional_specs(
+        specs, context_specs, role="context_management", extractor_id="extractor.context_management"
+    )
+    _append_optional_specs(
+        specs, local_storage_specs, role="local_storage", extractor_id="extractor.local_storage"
+    )
+    _append_optional_specs(
+        specs, prompt_specs, role="prompt_context", extractor_id="extractor.prompt_context"
+    )
+    _append_optional_specs(
+        specs, policy_specs, role="execution_policy", extractor_id="extractor.execution_policy"
+    )
+    _append_optional_specs(
+        specs, plugin_specs, role="plugin_runtime", extractor_id="extractor.plugin_runtime"
+    )
     return SourceRegistry(specs)
