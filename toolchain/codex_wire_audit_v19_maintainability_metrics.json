@@ -213,8 +213,8 @@
       "qualified_name": "verify_git_source",
       "start_line": 75
     },
-    "physical_line_count": 14902,
-    "source_sha256": "1353890aab4f4e68ea3e8cf837da64464070bdff9cdb6c7ad6dea9b46bb4e72e"
+    "physical_line_count": 14904,
+    "source_sha256": "17ff64b2114ee8945b14acbf025f9c936b8593698faef66315a8ffbe66f148dd"
   },
   "active_package": {
     "function_count": 384,
@@ -430,8 +430,8 @@
       "qualified_name": "verify_git_source",
       "start_line": 75
     },
-    "physical_line_count": 11555,
-    "source_sha256": "1118557163bd106e0b6ed99eae05abc312b3ee1ce0b1e491c631934080e2c37c"
+    "physical_line_count": 11557,
+    "source_sha256": "ce130cd985205f412799061c0e0d25c049806cb68008fb1fe16adad50da84046"
   },
   "active_release_tools": {
     "function_count": 135,
@@ -682,7 +682,7 @@
     "registered_optional_sources": 90,
     "registered_required_sources": 16,
     "registered_source_specs": 106,
-    "regression_test_methods": 211,
+    "regression_test_methods": 213,
     "standalone_release_schemas": 1,
     "strict_schema_templates": 17
   },

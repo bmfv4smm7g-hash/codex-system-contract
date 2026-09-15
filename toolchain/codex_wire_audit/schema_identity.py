@@ -102,7 +102,9 @@ class SchemaIdentityResolver:
                 source_path = _source_path_from_rows(rows)
             else:
                 source_path = _source_path_from_rows(rows)
-                qualified = qualified_rust_name(source_path, name)
+                enum_variant = re.search(r"/enums/([^/]+)/variants/\d+/fields$", pointer)
+                identity_name = f"{enum_variant.group(1)}::{name}" if enum_variant else name
+                qualified = qualified_rust_name(source_path, identity_name)
                 schema_id = schema_id_for_qualified_name(qualified)
             pointer_ids[(name, pointer)] = schema_id
             metadata[schema_id] = {

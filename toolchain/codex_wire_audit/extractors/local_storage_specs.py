@@ -58,7 +58,7 @@ _REQUIRED_MARKERS: dict[str, tuple[str, ...]] = {
     "rollout_filename": (
         "ids.split_once('_').unwrap_or((ids, ids))",
         "self.thread_id == self.rollout_id",
-        'format!("rollout-{timestamp}-{}_{}.jsonl"',
+        '"rollout-{timestamp}-{}_{}.jsonl"',
     ),
     "rollout_recorder": (
         "rollout_id_override: Option<RolloutId>",
