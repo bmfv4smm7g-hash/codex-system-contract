@@ -14,12 +14,21 @@ from typing import Any
 from ..diagnostics import DiagnosticCollector
 from ..models import SourceFile, SourceSnapshot
 from .registry import ExtractorResult, register_extractor
+from .responses_transport import (
+    PROVIDER,
+    RETRY,
+    SESSION,
+    STARTUP,
+    build_transport_lifecycle,
+    validate_transport_sources,
+)
 
 REQUEST_ID = "extractor.responses_request"
 LITE_ID = "extractor.responses_lite"
 EVENTS_ID = "extractor.response_events"
 SCHEMA_VERSION = "1.0.0"
-REQUEST_SCHEMA = "https://schemas.codex-system-contract.invalid/responses/responses-request-semantics-v1.schema.json"
+REQUEST_SCHEMA_VERSION = "2.0.0"
+REQUEST_SCHEMA = "https://schemas.codex-system-contract.invalid/responses/responses-request-semantics-v2.schema.json"
 LITE_SCHEMA = "https://schemas.codex-system-contract.invalid/responses/responses-lite-semantics-v1.schema.json"
 EVENTS_SCHEMA = "https://schemas.codex-system-contract.invalid/responses/response-events-semantics-v1.schema.json"
 
@@ -147,12 +156,13 @@ def _result(
     source_ids: tuple[str, ...],
     body: dict[str, Any],
     complete: bool,
+    schema_version: str = SCHEMA_VERSION,
 ) -> ExtractorResult:
     body["semantic_complete"] = complete
     body["semantic_digest"] = hashlib.sha256(_canonical(body)).hexdigest()
     return ExtractorResult(
         extractor_id=extractor_id,
-        schema_version=SCHEMA_VERSION,
+        schema_version=schema_version,
         data=body,
         semantic_complete=complete,
         source_spec_ids=source_ids,
@@ -161,7 +171,7 @@ def _result(
 
 class ResponsesRequestExtractor:
     extractor_id = REQUEST_ID
-    source_spec_ids = (COMMON, CORE, HTTP, WS)
+    source_spec_ids = (COMMON, CORE, HTTP, WS, STARTUP, SESSION, RETRY, PROVIDER)
 
     def extract(self, snapshot: SourceSnapshot, diagnostics: DiagnosticCollector) -> ExtractorResult:
         sources = {spec_id: snapshot.files.get(spec_id) for spec_id in self.source_spec_ids}
@@ -177,13 +187,17 @@ class ResponsesRequestExtractor:
                     source=None,
                     entity=f"responses_request.source.{spec_id}",
                 )
-            return ExtractorResult(REQUEST_ID, SCHEMA_VERSION, {}, False, self.source_spec_ids)
+            return ExtractorResult(REQUEST_ID, REQUEST_SCHEMA_VERSION, {}, False, self.source_spec_ids)
 
         common = sources[COMMON]
         core = sources[CORE]
         http = sources[HTTP]
         ws = sources[WS]
-        assert common and core and http and ws
+        startup = sources[STARTUP]
+        session = sources[SESSION]
+        retry = sources[RETRY]
+        provider = sources[PROVIDER]
+        assert common and core and http and ws and startup and session and retry and provider
         complete = _require(
             diagnostics,
             extractor_id=REQUEST_ID,
@@ -208,6 +222,14 @@ class ResponsesRequestExtractor:
                 ("RESPONSES_PROPERTY_MATCH_MISSING", "fn responses_request_properties_match"),
                 ("RESPONSES_PREVIOUS_RESPONSE_MISSING", "previous_response_id"),
                 ("RESPONSES_WS_METADATA_MISSING", "build_ws_client_metadata"),
+                ("RESPONSES_INCREMENTAL_ITEMS_MISSING", "fn get_incremental_items"),
+                ("RESPONSES_PREWARM_GENERATE_FALSE_MISSING", "generate: if warmup { Some(false) } else { None }"),
+                ("RESPONSES_PREWARM_COMPLETION_MISSING", "Ok(ResponseEvent::Completed { .. }) => break"),
+                ("RESPONSES_WS_ENABLE_GATE_MISSING", "responses_websocket_enabled"),
+                ("RESPONSES_WS_SESSION_FALLBACK_STATE_MISSING", "disable_websockets"),
+                ("RESPONSES_WS_426_FALLBACK_MISSING", "StatusCode::UPGRADE_REQUIRED"),
+                ("RESPONSES_WS_FALLBACK_OUTCOME_MISSING", "WebsocketStreamOutcome::FallbackToHttp"),
+                ("RESPONSES_WS_SWITCH_FALLBACK_MISSING", "try_switch_fallback_transport"),
             ),
         )
         complete &= _require(
@@ -235,8 +257,22 @@ class ResponsesRequestExtractor:
                 ("RESPONSES_WS_SERIALIZE_MISSING", "serialize_websocket_request"),
                 ("RESPONSES_WS_ENDPOINT_PATH_MISSING", "websocket_url_for_path(self.endpoint.path())"),
                 ("RESPONSES_WS_STREAM_MISSING", "pub async fn stream_request"),
+                ("RESPONSES_WS_TERMINAL_TAKE_MISSING", "let failed_stream = guard.take();"),
+                ("RESPONSES_WS_DROP_ABORT_MISSING", "self.pump_task.abort();"),
+                ("RESPONSES_WS_CONNECTION_LIMIT_MISSING", "websocket_connection_limit_reached"),
+                ("RESPONSES_WS_PREVIOUS_NOT_FOUND_MISSING", "previous_response_not_found"),
             ),
         )
+
+        transport_complete, prewarm_before_history_restore = validate_transport_sources(
+            diagnostics=diagnostics,
+            extractor_id=REQUEST_ID,
+            startup=startup,
+            session=session,
+            retry=retry,
+            provider=provider,
+        )
+        complete &= transport_complete
 
         http_fields = _struct_fields(common.text, "ResponsesApiRequest")
         ws_fields = _struct_fields(common.text, "ResponseCreateWsRequest")
@@ -268,12 +304,13 @@ class ResponsesRequestExtractor:
 
         body = {
             "$schema": REQUEST_SCHEMA,
-            "schema_version": SCHEMA_VERSION,
+            "schema_version": REQUEST_SCHEMA_VERSION,
             "ownership": {
                 "owns": [
                     "Responses HTTP and WebSocket request body projection",
                     "Responses-compatible endpoint selection",
                     "HTTP/WS request transport semantics and continuation shape",
+                    "WebSocket startup, socket-failure, retry, and session-scoped HTTP fallback lifecycle",
                 ],
                 "does_not_own": [
                     "turn metadata field derivation",
@@ -304,17 +341,24 @@ class ResponsesRequestExtractor:
             "websocket_transport": {
                 "message_type": "response.create",
                 "body": "ResponseCreateWsRequest serialized as one WebSocket request frame",
-                "connection": "provider websocket URL uses the same selected ResponsesEndpoint path",
+                "connection": "provider WebSocket URL uses the same /responses path and maps http->ws, https->wss",
                 "continuation_fields": ["previous_response_id", "generate", "client_metadata"],
             },
+            "transport_lifecycle": build_transport_lifecycle(
+                prewarm_before_history_restore=prewarm_before_history_restore
+            ),
             "evidence": {
                 "common": _evidence(common, "ResponsesApiRequest/ResponseCreateWsRequest"),
                 "core": _evidence(core, "build_responses_request/responses_request_properties_match"),
                 "http": _evidence(http, "ResponsesClient::stream_request"),
-                "websocket": _evidence(ws, "ResponsesWebsocketConnection::stream_request"),
+                "websocket": _evidence(ws, "ResponsesWebsocketConnection::stream_request/WsStream::drop"),
+                "startup": _evidence(startup, "schedule_startup_prewarm/prewarm_websocket"),
+                "session": _evidence(session, "schedule_startup_prewarm/record_initial_history"),
+                "retry": _evidence(retry, "handle_retryable_response_stream_error"),
+                "provider": _evidence(provider, "websocket_url_for_path"),
             },
         }
-        return _result(REQUEST_ID, self.source_spec_ids, body, complete)
+        return _result(REQUEST_ID, self.source_spec_ids, body, complete, REQUEST_SCHEMA_VERSION)
 
 
 class ResponsesLiteExtractor:

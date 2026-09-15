@@ -1,11 +1,11 @@
 {
   "counts": {
     "base": 16,
-    "extra": 106,
-    "optional": 132,
+    "extra": 110,
+    "optional": 136,
     "required": 16,
     "surface": 26,
-    "total": 148
+    "total": 152
   },
   "schema_version": "1.0.0",
   "sources": {
@@ -2089,6 +2089,87 @@
       "required": false,
       "roles": [
         "legacy_extra"
+      ]
+    },
+    "source_spec.extra.responses_transport_provider": {
+      "expected_symbols": [
+        "websocket_url_for_path",
+        "http",
+        "https",
+        "ws",
+        "wss"
+      ],
+      "extractor_ids": [
+        "extractor.responses_request"
+      ],
+      "group": "extra",
+      "id": "source_spec.extra.responses_transport_provider",
+      "legacy_key": "responses_transport_provider",
+      "path_candidates": [
+        "codex-rs/codex-api/src/provider.rs"
+      ],
+      "required": false,
+      "roles": [
+        "responses_request"
+      ]
+    },
+    "source_spec.extra.responses_transport_retry": {
+      "expected_symbols": [
+        "handle_retryable_response_stream_error",
+        "try_switch_fallback_transport",
+        "Falling back from WebSockets to HTTPS transport"
+      ],
+      "extractor_ids": [
+        "extractor.responses_request"
+      ],
+      "group": "extra",
+      "id": "source_spec.extra.responses_transport_retry",
+      "legacy_key": "responses_transport_retry",
+      "path_candidates": [
+        "codex-rs/core/src/responses_retry.rs"
+      ],
+      "required": false,
+      "roles": [
+        "responses_request"
+      ]
+    },
+    "source_spec.extra.responses_transport_session": {
+      "expected_symbols": [
+        "schedule_startup_prewarm",
+        "record_initial_history"
+      ],
+      "extractor_ids": [
+        "extractor.responses_request"
+      ],
+      "group": "extra",
+      "id": "source_spec.extra.responses_transport_session",
+      "legacy_key": "responses_transport_session",
+      "path_candidates": [
+        "codex-rs/core/src/session/session.rs"
+      ],
+      "required": false,
+      "roles": [
+        "responses_request"
+      ]
+    },
+    "source_spec.extra.responses_transport_startup": {
+      "expected_symbols": [
+        "schedule_startup_prewarm",
+        "CodexResponsesRequestKind::Prewarm",
+        "prewarm_websocket"
+      ],
+      "extractor_ids": [
+        "extractor.responses_request"
+      ],
+      "group": "extra",
+      "id": "source_spec.extra.responses_transport_startup",
+      "legacy_key": "responses_transport_startup",
+      "path_candidates": [
+        "codex-rs/core/src/session_startup_prewarm.rs"
+      ],
+      "required": false,
+      "roles": [
+        "responses_request"
       ]
     },
     "source_spec.extra.rmcp_client": {

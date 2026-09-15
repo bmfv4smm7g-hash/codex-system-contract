@@ -4,8 +4,8 @@ The enforced scope now includes both the installable package and the release scr
 
 | Metric | Frozen v10 baseline | Active package | Active release tools | Combined enforced scope |
 | --- | ---: | ---: | ---: | ---: |
-| Python modules | 3 | 68 | 12 | 80 |
-| Physical Python lines | 12,671 | 15,942 | 3,347 | 19,289 |
+| Python modules | 3 | 69 | 12 | 81 |
+| Physical Python lines | 12,671 | 16,157 | 3,347 | 19,504 |
 | Largest module | 5,016 | 581 | 496 | 581 |
 | Largest function | 1,254 | 199 | 174 | 199 |
 | Highest complexity | not measured | 41 | 36 | 41 |
@@ -16,11 +16,11 @@ Largest combined module: **`codex_wire_audit/metadata_history.py`** (581 lines).
 
 ## Generated maintenance assets
 
-- Source registry entries: **148** (16 required, 132 optional).
-- Strict schemas: **30**, including **1** release-spec schema.
+- Source registry entries: **152** (16 required, 136 optional).
+- Strict schemas: **31**, including **1** release-spec schema.
 - Metadata history: **7 keys**, **19 states**, **10 versions**, **9 transitions**.
-- Regression test methods: **290**.
-- Combined source digest: `f9b0f2f2c89727488f50ba9d2571f5e9705ba748df93d8900c2c4a1a13ed0443`.
+- Regression test methods: **293**.
+- Combined source digest: `b72d8c6312912bd4305294526be23b3a9b75da4c4d6b7b2e889049d8913dac7d`.
 
 ## Enforced budgets
 

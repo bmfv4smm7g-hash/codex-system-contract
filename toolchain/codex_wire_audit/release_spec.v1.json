@@ -379,7 +379,8 @@
       },
       "required_resources": [
         "extractors/responses_protocol.py",
-        "proof_schema_templates/responses-request-semantics-v1.schema.json",
+        "extractors/responses_transport.py",
+        "proof_schema_templates/responses-request-semantics-v2.schema.json",
         "proof_schema_templates/responses-lite-semantics-v1.schema.json",
         "proof_schema_templates/response-events-semantics-v1.schema.json",
         "coverage_profiles.v3.json"

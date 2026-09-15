@@ -314,6 +314,41 @@ Responses Lite rebuilds prompt-only prefix items for each request. The prefix in
 
 The internal metadata field is subject to the `content_item_kinds_enabled` gate.
 
+
+### Responses WebSocket prewarm, continuation, and HTTP fallback
+
+Responses WebSocket startup is a transport optimization, not a second prompt authority. During
+session initialization Codex builds a normal prompt snapshot with the ordinary base instructions
+and model-visible tools but an empty logical conversation input, then sends `response.create` with
+`generate: false` and waits for `response.completed`. The resulting response id can seed
+`previous_response_id` continuation. For resumed sessions this prewarm is scheduled before initial
+history is restored, so the first real delta may include restored history plus the new user item.
+Responses Lite still applies its normal tool/base-instruction input-prefix transformation to this
+prewarm; it does not add a real user item.
+
+A later WebSocket request reuses `previous_response_id` only when non-input request properties still
+match and the current input extends the previous request plus server-returned response items. The
+wire input is then only the incremental suffix. Otherwise Codex sends the full current input and no
+`previous_response_id`.
+
+The WebSocket and HTTP paths share `/responses`. Provider URL conversion is exact: an `http` base
+uses `ws`, an `https` base uses `wss`, and an existing `ws`/`wss` scheme is preserved. HTTP fallback
+uses the provider's ordinary Responses HTTP endpoint (`POST`, SSE); the user-facing warning calls it
+"HTTPS", but a custom `http://` provider remains HTTP.
+
+Fallback state is session-scoped. A WebSocket handshake HTTP 426 (`Upgrade Required`) switches
+immediately to the Responses HTTP path without ordinary WebSocket stream retries. Other retryable
+WebSocket failures first consume the configured stream retry budget; after it is exhausted Codex
+activates session HTTP fallback, resets the retry counter, and replays the request over HTTP. The
+fallback is sticky across later turns in that session. Eligible sampling connection failures under
+`UnboundedConnectionRetries` take the unbounded connection-retry branch before this normal
+retry-budget fallback.
+
+Terminal WebSocket stream errors poison the current socket: Codex removes the `WsStream` from
+connection state and drops it rather than waiting for a graceful close handshake; `WsStream::drop`
+aborts its pump task. Retryable wrapped codes such as `websocket_connection_limit_reached` and
+`previous_response_not_found` therefore retry on a new/reopened WebSocket, not on the failed one.
+
 ---
 
 ## 7. World-state deltas
