@@ -1,0 +1,45 @@
+{
+  "$id": "https://schemas.codex-system-contract.invalid/environment/execution-environment-semantics-v1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Codex execution environment semantics",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "schema_version",
+    "ownership",
+    "shell_environment",
+    "selection",
+    "manager",
+    "shell_snapshot",
+    "turn_projection",
+    "evidence",
+    "semantic_complete",
+    "semantic_digest"
+  ],
+  "properties": {
+    "$schema": {"const": "https://schemas.codex-system-contract.invalid/environment/execution-environment-semantics-v1.schema.json"},
+    "schema_version": {"const": "1.0.0"},
+    "ownership": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["owns", "does_not_own"],
+      "properties": {
+        "owns": {"type": "array", "items": {"type": "string"}, "minItems": 6, "uniqueItems": true},
+        "does_not_own": {"type": "array", "items": {"type": "string"}, "minItems": 5, "uniqueItems": true}
+      }
+    },
+    "shell_environment": {"type": "object", "required": ["policy", "construction_order", "restricted_launch_context", "platform_core_environment", "evidence"]},
+    "selection": {"type": "object", "required": ["config_ownership", "default_selection", "selection_identity", "deduplication", "unknown_environment", "child_inheritance", "configuration_wakeup", "capability_roots", "evidence"]},
+    "manager": {"type": "object", "required": ["registry", "well_known_ids", "default_behavior", "discovery", "validation", "connection_semantics", "observed_status", "transport_boundary", "evidence"]},
+    "shell_snapshot": {"type": "object", "required": ["availability", "capture", "validation", "timeout_seconds", "retention_days", "lifecycle", "storage_boundary", "evidence"]},
+    "turn_projection": {"type": "object", "required": ["turn_environment", "cwd_authority", "shell_policy", "selection_projection", "policy_boundary", "routing_boundary", "evidence"]},
+    "evidence": {
+      "type": "object",
+      "minProperties": 6,
+      "additionalProperties": {"type": "object", "required": ["source_spec_id", "path", "sha256", "git_blob_sha", "symbol"]}
+    },
+    "semantic_complete": {"type": "boolean"},
+    "semantic_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}
