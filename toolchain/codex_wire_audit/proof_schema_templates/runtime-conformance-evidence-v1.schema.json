@@ -89,7 +89,7 @@
       "required": ["role", "media_type", "sha256"],
       "properties": {
         "role": {"$ref": "#/$defs/token"},
-        "media_type": {"type": "string", "minLength": 3, "maxLength": 128, "pattern": "^[^/[:space:]]+/[^[:space:]]+$"},
+        "media_type": {"type": "string", "minLength": 3, "maxLength": 128, "pattern": "^[^/\\s]+/[^\\s]+$"},
         "sha256": {"$ref": "#/$defs/sha256"}
       }
     },
