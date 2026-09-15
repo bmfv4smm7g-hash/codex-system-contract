@@ -34,11 +34,10 @@ jobs:
           start = workflow.index("          python - <<'PY'\n") + len("          python - <<'PY'\n")
           end = workflow.index("\n          PY\n", start)
           script = textwrap.dedent(workflow[start:end])
-          broken = "for name in (\\n              'codex_wire_audit/schema_templates/evolution-contract.schema.json'"
-          fixed = "for name in (\n              'codex_wire_audit/schema_templates/evolution-contract.schema.json'"
-          if broken not in script:
-              raise SystemExit('expected closure driver newline defect not found')
-          script = script.replace(broken, fixed, 1)
+          block_start = script.index('for name in (')
+          block_end = script.index('\n    path = Path(name)', block_start)
+          block = script[block_start:block_end].replace('\\n', '\n')
+          script = script[:block_start] + block + script[block_end:]
           Path('/tmp/config-native-effect-closure.py').write_text(script)
           PY
           cd toolchain
