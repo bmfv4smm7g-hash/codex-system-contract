@@ -436,6 +436,30 @@
       "version": "1.0.0"
     },
     {
+      "allow_legacy_reconstruction": false,
+      "description": "Focused bounded runtime-observation proof tied to one exact report, source/build identity, platform, account class, network class, observer harness, assertions, and hashed artifacts.",
+      "id": "runtime_conformance_only",
+      "required_dimensions": [
+        "schema",
+        "profile",
+        "runtime_conformance"
+      ],
+      "required_extractors": [],
+      "required_history_keys": [],
+      "required_runtime_scenarios": [
+        "responses_http_request",
+        "responses_websocket_request",
+        "mcp_projection",
+        "response_error_event",
+        "redirect_headers",
+        "context_management_activation",
+        "context_window_rollover",
+        "history_notes_retrieval",
+        "config_schema_surface_graph"
+      ],
+      "version": "1.0.0"
+    },
+    {
       "allow_legacy_reconstruction": true,
       "description": "Deterministic unit/integration fixture profile.",
       "id": "fixture",
