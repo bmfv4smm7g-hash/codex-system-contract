@@ -42,7 +42,7 @@ jobs:
       - name: Install constrained development dependencies
         run: python -m pip install --constraint toolchain/ci/constraints.txt -e './toolchain[test]'
 
-      - name: Materialize direct canonical design
+      - name: Harden and materialize direct canonical design
         shell: bash
         run: |
           set -euo pipefail
@@ -53,6 +53,7 @@ jobs:
 
           path = Path('.github/direct-contract-migration-v2.py')
           text = path.read_text(encoding='utf-8')
+
           pattern = re.compile(
               r'(?m)^(?P<indent>[ \t]*)if victim not in unavailable:\n'
               r'(?P=indent)    unavailable\.append\(victim\)'
@@ -64,6 +65,35 @@ jobs:
           text, count = pattern.subn(replacement, text, count=1)
           if count != 1:
               raise SystemExit(f'expected one unavailable_specs mutation, found {count}')
+
+          old = (
+              '    def visit_ImportFrom(self, node: ast.ImportFrom):\n'
+              '        if node.module and node.module.endswith("compatibility_views"):\n'
+              '            return None\n'
+              '        return self.generic_visit(node)\n'
+              '\n'
+              '    def visit_Import(self, node: ast.Import):\n'
+              '        node.names = [alias for alias in node.names if not alias.name.endswith("compatibility_views")]\n'
+              '        return node if node.names else None\n'
+          )
+          new = (
+              '    def visit_ImportFrom(self, node: ast.ImportFrom):\n'
+              '        if node.module and node.module.endswith("compatibility_views"):\n'
+              '            return None\n'
+              '        node.names = [alias for alias in node.names if alias.name not in REMOVED_IDENTIFIERS]\n'
+              '        return self.generic_visit(node) if node.names else None\n'
+              '\n'
+              '    def visit_Import(self, node: ast.Import):\n'
+              '        node.names = [\n'
+              '            alias for alias in node.names\n'
+              '            if not alias.name.endswith("compatibility_views")\n'
+              '            and alias.name.rsplit(".", 1)[-1] not in REMOVED_IDENTIFIERS\n'
+              '        ]\n'
+              '        return self.generic_visit(node) if node.names else None\n'
+          )
+          if old not in text:
+              raise SystemExit('expected RemoveAdapter import handlers were not found')
+          text = text.replace(old, new, 1)
           path.write_text(text, encoding='utf-8')
           PY
           python .github/direct-contract-migration-v2.py
@@ -73,13 +103,51 @@ jobs:
           rm -f .github/canonical_bootstrap_v2.py
           rm -f .github/workflows/temporary-canonical-main-finalizer-20260909.yml
 
-      - name: Repair remaining direct-contract documentation
+      - name: Repair remaining tests and documentation
         shell: bash
         run: |
           set -euo pipefail
           python - <<'PY'
+          from __future__ import annotations
+
+          import ast
           from pathlib import Path
           import re
+
+          removed = {
+              'compatibility_views',
+              'apply_config_surface_overlay',
+              'apply_local_storage_overlay',
+          }
+          for path in sorted(Path('toolchain/tests').glob('test_*.py')):
+              source = path.read_text(encoding='utf-8')
+              tree = ast.parse(source, filename=str(path))
+              changed = False
+              body: list[ast.stmt] = []
+              for node in tree.body:
+                  if isinstance(node, ast.ImportFrom):
+                      names = [alias for alias in node.names if alias.name not in removed]
+                      if len(names) != len(node.names):
+                          changed = True
+                          node.names = names
+                      if not node.names:
+                          continue
+                  elif isinstance(node, ast.Import):
+                      names = [
+                          alias for alias in node.names
+                          if alias.name.rsplit('.', 1)[-1] not in removed
+                      ]
+                      if len(names) != len(node.names):
+                          changed = True
+                          node.names = names
+                      if not node.names:
+                          continue
+                  body.append(node)
+              if changed:
+                  tree.body = body
+                  ast.fix_missing_locations(tree)
+                  compile(tree, str(path), 'exec')
+                  path.write_text(ast.unparse(tree).rstrip() + '\n', encoding='utf-8')
 
           path = Path('LOCAL_STORAGE_AND_ROLLOUT_LAYOUT.md')
           text = path.read_text(encoding='utf-8')
