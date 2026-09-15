@@ -30,8 +30,8 @@
       "sha256": "ad32a94926aba675fd083f3fc8dda1963762cc1daa5a1bcafef3ca381648a96e"
     },
     "system-contract.schema.json": {
-      "bytes": 1665,
-      "sha256": "6e2587063f201d1ee1d76dcb83582e37a6aa289be0d501d93c31daefbe37448e"
+      "bytes": 1386,
+      "sha256": "8d6fa49b576d4335e38bc6d9a36c6fdc516eeb75b012af0c7e409193fb61739e"
     },
     "turn-metadata-semantics.schema.json": {
       "bytes": 4527,

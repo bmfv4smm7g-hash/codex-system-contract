@@ -183,7 +183,6 @@
         "system_contract.py",
         "system_contract_validation.py",
         "system_contract_evidence.py",
-        "compatibility_views.py",
         "schema_templates/system-contract.schema.json"
       ],
       "status": "active_package"

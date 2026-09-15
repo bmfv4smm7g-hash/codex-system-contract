@@ -193,11 +193,10 @@ Consumers of the full schema should enforce these rules:
 
 ## Machine-readable contract
 
-Generated reports expose the contract in two places:
+Generated reports expose the contract once:
 
 ```text
-report.local_storage_schema
-report.evolution_contract.extractors["extractor.local_storage"].data
+report.system_contract.model.extractors["extractor.local_storage"].data
 ```
 
 The dedicated validation schema is packaged at:
