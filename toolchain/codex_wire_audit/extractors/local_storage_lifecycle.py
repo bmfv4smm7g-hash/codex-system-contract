@@ -27,6 +27,9 @@ def build_transitions(*, archive_dir: Any, sessions_dir: Any) -> dict[str, Any]:
             "cutoff_parameter": "before_turn_id",
             "cutoff_granularity": "turn boundary",
             "supports_intra_turn_item_cutoff": False,
+            "steer_representation": "additional user message inside an existing turn",
+            "steer_independent_branch_supported": False,
+            "tui_steer_branch_error": "the selected prompt is a steer and cannot be branched independently",
             "logical_thread": "same thread_id",
             "session_id": "preserved verbatim from source_meta.session_id",
             "rollout_id": "new UUID",
@@ -156,6 +159,10 @@ def build_invariants() -> list[dict[str, Any]]:
         {
             "id": "local_storage.external_rewrite_does_not_auto_rebuild_projection",
             "statement": "the incremental projector assumes an immutable projected prefix and does not automatically rebuild after external JSONL rewrite",
+        },
+        {
+            "id": "local_storage.steer_is_not_independent_branch_boundary",
+            "statement": "a steer is an additional user message within a turn and cannot be branched independently",
         },
         {
             "id": "local_storage.sidecars_follow_thread_identity",

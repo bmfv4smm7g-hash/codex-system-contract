@@ -638,6 +638,15 @@
             },
             "on_compare_and_swap_conflict": {
               "type": "string"
+            },
+            "steer_representation": {
+              "const": "additional user message inside an existing turn"
+            },
+            "steer_independent_branch_supported": {
+              "const": false
+            },
+            "tui_steer_branch_error": {
+              "const": "the selected prompt is a steer and cannot be branched independently"
             }
           }
         },

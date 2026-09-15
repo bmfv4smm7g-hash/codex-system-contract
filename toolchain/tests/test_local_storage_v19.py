@@ -17,6 +17,12 @@ SOURCE_TEXTS.update({
     "history_read": "fn list_turns() {}\nfn list_items() {}\nfn thread_history_db() {}\n",
 })
 
+SOURCE_TEXTS["tui_backtrack"] = """
+    // A turn can contain multiple user messages when it was steered.
+    // app-server cannot fork in the middle of a turn.
+    bail!("the selected prompt is a steer and cannot be branched independently");
+"""
+
 def _snapshot(overrides: dict[str, str] | None=None) -> SourceSnapshot:
     source_texts = dict(SOURCE_TEXTS)
     source_texts.update(overrides or {})
@@ -131,3 +137,16 @@ def test_local_storage_restart_projection_semantics_are_explicit() -> None:
     assert r["cutoff_parameter"] == "before_turn_id"
     assert r["cutoff_granularity"] == "turn boundary"
     assert r["supports_intra_turn_item_cutoff"] is False
+    assert r["steer_representation"] == "additional user message inside an existing turn"
+    assert r["steer_independent_branch_supported"] is False
+    assert r["tui_steer_branch_error"] == "the selected prompt is a steer and cannot be branched independently"
+
+
+def test_tui_steer_branch_boundary_drift_is_fail_visible() -> None:
+    broken = SOURCE_TEXTS["tui_backtrack"].replace(
+        "the selected prompt is a steer and cannot be branched independently",
+        "steer is now independently branchable",
+    )
+    result, diagnostics = _extract({"tui_backtrack": broken})
+    assert result.semantic_complete is False
+    assert "LOCAL_STORAGE_SEMANTIC_MARKER_MISSING" in {item.code for item in diagnostics.values()}
