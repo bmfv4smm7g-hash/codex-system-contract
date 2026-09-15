@@ -32,10 +32,17 @@ jobs:
 
           extractor = Path('codex_wire_audit/extractors/app_server_rpc.py')
           text = extractor.read_text()
-          old = '''def _enum_variants(text: str, name: str) -> list[str]:\n    body = _balanced_block(text, f"pub enum {name}")\n    if body is None:\n        return []\n    variants = re.findall(r"(?m)^\\s{4}(?:#\\[[^\\n]+\\]\\s*)*([A-Z][A-Za-z0-9_]*)\\b", body)\n    return list(dict.fromkeys(variants))\n'''
-          new = '''def _enum_variants(text: str, name: str) -> list[str]:\n    body = _balanced_block(text, f"pub enum {name}")\n    if body is None:\n        return []\n    variants = re.findall(\n        r"(?:^|,)\\s*(?:#\\[[^\\]]+\\]\\s*)*([A-Z][A-Za-z0-9_]*)\\b",\n        body,\n        re.MULTILINE,\n    )\n    return list(dict.fromkeys(variants))\n'''
-          if old in text:
-              text = text.replace(old, new, 1)
+          old_fields = '''def _struct_fields(text: str, name: str) -> list[str]:\n    body = _balanced_block(text, f"pub struct {name}")\n    if body is None:\n        return []\n    return re.findall(r"(?m)^\\s{4}pub\\s+(?:r#)?([A-Za-z_][A-Za-z0-9_]*)\\s*:", body)\n'''
+          new_fields = '''def _struct_fields(text: str, name: str) -> list[str]:\n    body = _balanced_block(text, f"pub struct {name}")\n    if body is None:\n        return []\n    return re.findall(\n        r"(?:^\\s*|,\\s*)(?:#\\[[^\\]]+\\]\\s*)*pub\\s+(?:r#)?([A-Za-z_][A-Za-z0-9_]*)\\s*:",\n        body,\n        re.MULTILINE,\n    )\n'''
+          if old_fields in text:
+              text = text.replace(old_fields, new_fields, 1)
+          elif 'r"(?:^\\s*|,\\s*)' not in text:
+              raise SystemExit('struct field parser marker missing')
+
+          old_enum = '''def _enum_variants(text: str, name: str) -> list[str]:\n    body = _balanced_block(text, f"pub enum {name}")\n    if body is None:\n        return []\n    variants = re.findall(r"(?m)^\\s{4}(?:#\\[[^\\n]+\\]\\s*)*([A-Z][A-Za-z0-9_]*)\\b", body)\n    return list(dict.fromkeys(variants))\n'''
+          new_enum = '''def _enum_variants(text: str, name: str) -> list[str]:\n    body = _balanced_block(text, f"pub enum {name}")\n    if body is None:\n        return []\n    variants = re.findall(\n        r"(?:^|,)\\s*(?:#\\[[^\\]]+\\]\\s*)*([A-Z][A-Za-z0-9_]*)\\b",\n        body,\n        re.MULTILINE,\n    )\n    return list(dict.fromkeys(variants))\n'''
+          if old_enum in text:
+              text = text.replace(old_enum, new_enum, 1)
           elif 'r"(?:^|,)\\s*' not in text:
               raise SystemExit('enum parser marker missing')
           extractor.write_text(text)
