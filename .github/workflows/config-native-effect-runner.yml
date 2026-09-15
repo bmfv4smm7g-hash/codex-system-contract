@@ -52,6 +52,56 @@ jobs:
               raise SystemExit('negative source-anchor fixture marker missing')
           path.write_text(text.replace(old, new, 1))
           PY
+          python - <<'PY'
+          from pathlib import Path
+          import textwrap
+
+          path = Path('codex_wire_audit/extractors/config_effects.py')
+          text = path.read_text()
+          class_pos = text.index('\n\nclass ConfigEffectsExtractor:')
+          extract_pos = text.index('    def extract(', class_pos)
+          start = text.index('        complete = True\n', extract_pos)
+          end = text.index('        data: dict[str, Any] = {', start)
+          body = textwrap.dedent(text[start:end])
+          helper = '''def _validate_semantics(
+              diagnostics: DiagnosticCollector,
+              *,
+              catalog: dict[str, Any],
+              registry: dict[str, Any],
+              schema_policy: dict[str, Any],
+              crosswalk: dict[str, Any],
+              missing_effect_paths: list[str],
+              missing_effect_anchors: list[dict[str, str]],
+              missing_legacy: list[str],
+              effect_sources: dict[str, SourceFile | None],
+              schema_source: SourceFile,
+              registry_source: SourceFile,
+              schema_generator_source: SourceFile,
+          ) -> bool:
+          '''
+          helper = textwrap.dedent(helper) + textwrap.indent(body, '    ') + '    return complete\n'
+          call = '''        complete = _validate_semantics(
+              diagnostics,
+              catalog=catalog,
+              registry=registry,
+              schema_policy=schema_policy,
+              crosswalk=crosswalk,
+              missing_effect_paths=missing_effect_paths,
+              missing_effect_anchors=missing_effect_anchors,
+              missing_legacy=missing_legacy,
+              effect_sources=effect_sources,
+              schema_source=schema_source,
+              registry_source=registry_source,
+              schema_generator_source=schema_generator_source,
+          )
+
+          '''
+          call = textwrap.dedent(call)
+          text = text[:start] + call + text[end:]
+          class_pos = text.index('\n\nclass ConfigEffectsExtractor:')
+          text = text[:class_pos] + '\n\n' + helper + text[class_pos:]
+          path.write_text(text)
+          PY
           python -m pytest -q tests/test_config_surface_v19.py test_codex_wire_audit_v11.py
           python -m pytest -q
           make legacy-assets
