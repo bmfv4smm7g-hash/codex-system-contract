@@ -68,12 +68,10 @@ python toolchain/tools/check_config_surface.py \
 
 ## Machine-readable outputs
 
-- `report.json` contains extractor facts, diagnostics, coverage, and source provenance.
-- `report.local_storage_schema` is the authoritative local storage/layout view;
-  the same data remains available at
-  `report.evolution_contract.extractors["extractor.local_storage"].data`.
-- `config-schema.json` is the normalized, path-addressable configuration catalog.
-- `config-surface-graph.json` connects config paths and feature policy to previously modeled protocol surfaces.
+- `report.json` contains diagnostics plus one canonical `system_contract`.
+- Local-storage facts live at `report.system_contract.model.extractors["extractor.local_storage"].data`.
+- Configuration facts and their graph live at `report.system_contract.model.extractors["extractor.config_effects"].data`.
+- Standalone config/schema files are explicit CLI exports, not alternate report paths.
 - upstream app-server protocol JSON schemas remain the field-level authority for
   session, thread, turn, item, fork, and pagination RPC shapes.
 

@@ -1066,17 +1066,6 @@
     "authority": {
       "const": "migrated_semantic_extractors"
     },
-    "compatibility_views": {
-      "additionalProperties": false,
-      "minProperties": 1,
-      "patternProperties": {
-        "^/": {
-          "pattern": "^[0-9a-f]{64}$",
-          "type": "string"
-        }
-      },
-      "type": "object"
-    },
     "integrity": {
       "additionalProperties": false,
       "properties": {
@@ -1110,7 +1099,6 @@
     "schema",
     "authority",
     "model",
-    "compatibility_views",
     "integrity"
   ],
   "title": "Canonical migrated Codex system semantics, v1",
