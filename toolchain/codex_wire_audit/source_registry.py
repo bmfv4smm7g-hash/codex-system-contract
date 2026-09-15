@@ -217,6 +217,42 @@ def _merge_optional_specs(
         )
 
 
+_MCP_SPECS = (
+    ("source_spec.extra.mcp_catalog", "mcp_catalog", "codex-rs/codex-mcp/src/catalog.rs", ("McpServerSource", "McpCatalogBuilder", "ResolvedMcpCatalog")),
+    ("source_spec.extra.mcp_runtime", "mcp_runtime", "codex-rs/codex-mcp/src/mcp/mod.rs", ("McpConfig", "effective_mcp_servers", "ToolPluginProvenance")),
+    ("source_spec.extra.mcp_tools", "mcp_tools", "codex-rs/codex-mcp/src/tools.rs", ("ToolInfo", "ToolFilter", "normalize_tools_for_model_with_prefix")),
+    ("source_spec.extra.mcp_tool_exposure", "mcp_tool_exposure", "codex-rs/core/src/mcp_tool_exposure.rs", ("McpHandlerCache", "append_mcp_tools", "tool_is_model_visible")),
+    ("source_spec.extra.mcp_tool_plan", "mcp_tool_plan", "codex-rs/core/src/tools/spec_plan.rs", ("build_tool_router", "apply_mcp_tool_exposure_policy", "omit_tools_from")),
+    ("source_spec.extra.mcp_handler", "mcp_handler", "codex-rs/core/src/tools/handlers/mcp.rs", ("McpHandler", "prepare_mcp_call", "handle_mcp_tool_call")),
+)
+
+_RESPONSES_REQUEST_SPECS = (
+    ("source_spec.base.common", "common", "codex-rs/codex-api/src/common.rs", ("ResponsesApiRequest", "ResponseCreateWsRequest", "ResponsesWsRequest")),
+    ("source_spec.base.core", "core", "codex-rs/core/src/client.rs", ("build_responses_request", "responses_request_properties_match", "build_ws_client_metadata")),
+    ("source_spec.base.http", "http", "codex-rs/codex-api/src/endpoint/responses.rs", ("ResponsesEndpoint", "ResponsesClient", "stream_request")),
+    ("source_spec.base.ws", "ws", "codex-rs/codex-api/src/endpoint/responses_websocket.rs", ("ResponsesWebsocketConnection", "ResponsesWebsocketClient", "stream_request")),
+)
+
+_RESPONSES_LITE_SPECS = (
+    ("source_spec.base.core", "core", "codex-rs/core/src/client.rs", ("use_responses_lite", "ResponseItem::AdditionalTools", "add_responses_lite_header")),
+)
+
+_RESPONSE_EVENT_SPECS = (
+    ("source_spec.base.common", "common", "codex-rs/codex-api/src/common.rs", ("ResponseEvent",)),
+    ("source_spec.base.response_sse", "response_sse", "codex-rs/codex-api/src/sse/responses.rs", ("ResponsesStreamEvent", "process_responses_event", "spawn_response_stream")),
+    ("source_spec.base.ws", "ws", "codex-rs/codex-api/src/endpoint/responses_websocket.rs", ("process_responses_event", "run_websocket_response_stream")),
+)
+
+def _merge_protocol_domain_specs(specs: list[SourceSpec]) -> None:
+    for rows, role, extractor_id in (
+        (_MCP_SPECS, "mcp_projection", "extractor.mcp_projection"),
+        (_RESPONSES_REQUEST_SPECS, "responses_request", "extractor.responses_request"),
+        (_RESPONSES_LITE_SPECS, "responses_lite", "extractor.responses_lite"),
+        (_RESPONSE_EVENT_SPECS, "response_events", "extractor.response_events"),
+    ):
+        _merge_optional_specs(specs, rows, role=role, extractor_id=extractor_id)
+
+
 def from_legacy_maps(
     base_files: Mapping[str, str],
     surface_files: Mapping[str, str],
@@ -353,14 +389,6 @@ def from_legacy_maps(
         ("source_spec.extra.routing_requirements", "routing_requirements", "codex-rs/config/src/config_requirements.rs", ("NetworkRequirementsToml", "managed_allowed_domains_only", "header_injections")),
         ("source_spec.extra.routing_outbound_proxy", "routing_outbound_proxy", "codex-rs/http-client/src/outbound_proxy.rs", ("OutboundProxyPolicy", "HttpClientFactory", "resolve_proxy_route")),
     )
-    mcp_specs = (
-        ("source_spec.extra.mcp_catalog", "mcp_catalog", "codex-rs/codex-mcp/src/catalog.rs", ("McpServerSource", "McpCatalogBuilder", "ResolvedMcpCatalog")),
-        ("source_spec.extra.mcp_runtime", "mcp_runtime", "codex-rs/codex-mcp/src/mcp/mod.rs", ("McpConfig", "effective_mcp_servers", "ToolPluginProvenance")),
-        ("source_spec.extra.mcp_tools", "mcp_tools", "codex-rs/codex-mcp/src/tools.rs", ("ToolInfo", "ToolFilter", "normalize_tools_for_model_with_prefix")),
-        ("source_spec.extra.mcp_tool_exposure", "mcp_tool_exposure", "codex-rs/core/src/mcp_tool_exposure.rs", ("McpHandlerCache", "append_mcp_tools", "tool_is_model_visible")),
-        ("source_spec.extra.mcp_tool_plan", "mcp_tool_plan", "codex-rs/core/src/tools/spec_plan.rs", ("build_tool_router", "apply_mcp_tool_exposure_policy", "omit_tools_from")),
-        ("source_spec.extra.mcp_handler", "mcp_handler", "codex-rs/core/src/tools/handlers/mcp.rs", ("McpHandler", "prepare_mcp_call", "handle_mcp_tool_call")),
-    )
     specs.append(SourceSpec(
         id="source_spec.extra.generated_config_schema",
         legacy_key="generated_config_schema",
@@ -408,10 +436,5 @@ def from_legacy_maps(
         role="routing_transport",
         extractor_id="extractor.routing_transport",
     )
-    _merge_optional_specs(
-        specs,
-        mcp_specs,
-        role="mcp_projection",
-        extractor_id="extractor.mcp_projection",
-    )
+    _merge_protocol_domain_specs(specs)
     return SourceRegistry(specs)
