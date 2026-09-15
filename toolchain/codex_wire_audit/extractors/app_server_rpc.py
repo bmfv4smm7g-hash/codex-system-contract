@@ -123,14 +123,22 @@ def _struct_fields(text: str, name: str) -> list[str]:
     body = _balanced_block(text, f"pub struct {name}")
     if body is None:
         return []
-    return re.findall(r"(?m)^\s{4}pub\s+(?:r#)?([A-Za-z_][A-Za-z0-9_]*)\s*:", body)
+    return re.findall(
+        r"(?:^\s*|,\s*)(?:#\[[^\]]+\]\s*)*pub\s+(?:r#)?([A-Za-z_][A-Za-z0-9_]*)\s*:",
+        body,
+        re.MULTILINE,
+    )
 
 
 def _enum_variants(text: str, name: str) -> list[str]:
     body = _balanced_block(text, f"pub enum {name}")
     if body is None:
         return []
-    variants = re.findall(r"(?m)^\s{4}(?:#\[[^\n]+\]\s*)*([A-Z][A-Za-z0-9_]*)\b", body)
+    variants = re.findall(
+        r"(?:^|,)\s*(?:#\[[^\]]+\]\s*)*([A-Z][A-Za-z0-9_]*)\b",
+        body,
+        re.MULTILINE,
+    )
     return list(dict.fromkeys(variants))
 
 
@@ -222,6 +230,92 @@ def _validate_inventory(
             entity="app_server_rpc.notifications",
         )
     return complete
+
+
+def _build_contract_body(
+    *,
+    common: SourceFile,
+    thread: SourceFile,
+    thread_data: SourceFile,
+    turn: SourceFile,
+    item: SourceFile,
+    rpc: SourceFile,
+    requests: list[dict[str, str]],
+    notifications: list[dict[str, str]],
+    thread_statuses: list[str],
+    turn_statuses: list[str],
+    history_modes: list[str],
+    item_views: list[str],
+    complete: bool,
+) -> dict[str, Any]:
+    return {
+        "$schema": SCHEMA_ID,
+        "schema_version": SCHEMA_VERSION,
+        "ownership": {
+            "owns": [
+                "app-server request/response/notification wire dispatch",
+                "thread/turn/item lifecycle payload shape",
+                "per-request serialization scope",
+                "thread history mode and item hydration view",
+                "turn lifecycle status and steering precondition",
+                "thread/turn/item pagination request shape",
+            ],
+            "does_not_own": [
+                "local rollout or SQLite persistence implementation",
+                "Responses upstream request/event transport",
+                "permission/approval policy semantics",
+                "MCP/plugin capability projection",
+                "multi-agent execution/control internals",
+                "account/realtime/application feature APIs outside lifecycle dispatch",
+            ],
+        },
+        "rpc_envelope": {
+            "dialect": "JSON-RPC-shaped but omits the jsonrpc=2.0 wire field",
+            "request_id": ["string", "integer"],
+            "request": ["id", "method", "optional params", "optional W3C trace"],
+            "notification": ["method", "optional params"],
+            "response": ["id", "result"],
+            "error": ["id", "error.code", "error.message", "optional error.data"],
+        },
+        "request_dispatch": requests,
+        "notification_dispatch": notifications,
+        "thread": {
+            "statuses": thread_statuses,
+            "history_modes": history_modes,
+            "identity_fields": _struct_fields(thread_data.text, "Thread"),
+            "start_fields": _struct_fields(thread.text, "ThreadStartParams"),
+            "resume_fields": _struct_fields(thread.text, "ThreadResumeParams"),
+            "read_fields": _struct_fields(thread.text, "ThreadReadParams"),
+            "list_fields": _struct_fields(thread.text, "ThreadListParams"),
+            "turns_list_fields": _struct_fields(thread.text, "ThreadTurnsListParams"),
+            "items_list_fields": _struct_fields(thread.text, "ThreadItemsListParams"),
+            "resume_precedence": "for non-running threads: history > non-empty path > thread_id; a running thread_id rejoins the live thread and a supplied path becomes a consistency check",
+        },
+        "turn": {
+            "statuses": turn_statuses,
+            "items_views": item_views,
+            "data_fields": _struct_fields(thread_data.text, "Turn"),
+            "start_fields": _struct_fields(turn.text, "TurnStartParams"),
+            "steer_fields": _struct_fields(turn.text, "TurnSteerParams"),
+            "interrupt_fields": _struct_fields(turn.text, "TurnInterruptParams"),
+            "steer_precondition": "expectedTurnId must match the currently active turn",
+        },
+        "pagination": {
+            "thread_list": "opaque cursor + optional limit over thread summaries",
+            "turn_list": "threadId + opaque cursor + optional limit; use for paginated history instead of full thread/read hydration",
+            "item_list": "threadId + optional turnId + opaque cursor + optional limit across persisted item history",
+            "items_view": "NotLoaded, Summary, and Full describe hydration independently of turn status",
+        },
+        "evidence": {
+            "common": _evidence(common, "client_request_definitions/server_notification_definitions"),
+            "thread": _evidence(thread, "ThreadStartParams/ThreadResumeParams/pagination params"),
+            "thread_data": _evidence(thread_data, "Thread/Turn/ThreadHistoryMode/TurnItemsView"),
+            "turn": _evidence(turn, "TurnStatus/TurnStartParams/TurnSteerParams/TurnInterruptParams"),
+            "item": _evidence(item, "ThreadItem"),
+            "rpc": _evidence(rpc, "JSONRPCMessage/JSONRPCRequest/JSONRPCNotification"),
+        },
+        "semantic_complete": complete,
+    }
 
 
 class AppServerRpcExtractor:
@@ -364,74 +458,21 @@ class AppServerRpcExtractor:
                 entity="app_server_rpc.items_view",
             )
 
-        body: dict[str, Any] = {
-            "$schema": SCHEMA_ID,
-            "schema_version": SCHEMA_VERSION,
-            "ownership": {
-                "owns": [
-                    "app-server request/response/notification wire dispatch",
-                    "thread/turn/item lifecycle payload shape",
-                    "per-request serialization scope",
-                    "thread history mode and item hydration view",
-                    "turn lifecycle status and steering precondition",
-                    "thread/turn/item pagination request shape",
-                ],
-                "does_not_own": [
-                    "local rollout or SQLite persistence implementation",
-                    "Responses upstream request/event transport",
-                    "permission/approval policy semantics",
-                    "MCP/plugin capability projection",
-                    "multi-agent execution/control internals",
-                    "account/realtime/application feature APIs outside lifecycle dispatch",
-                ],
-            },
-            "rpc_envelope": {
-                "dialect": "JSON-RPC-shaped but omits the jsonrpc=2.0 wire field",
-                "request_id": ["string", "integer"],
-                "request": ["id", "method", "optional params", "optional W3C trace"],
-                "notification": ["method", "optional params"],
-                "response": ["id", "result"],
-                "error": ["id", "error.code", "error.message", "optional error.data"],
-            },
-            "request_dispatch": requests,
-            "notification_dispatch": notifications,
-            "thread": {
-                "statuses": thread_statuses,
-                "history_modes": history_modes,
-                "identity_fields": _struct_fields(thread_data.text, "Thread"),
-                "start_fields": _struct_fields(thread.text, "ThreadStartParams"),
-                "resume_fields": _struct_fields(thread.text, "ThreadResumeParams"),
-                "read_fields": _struct_fields(thread.text, "ThreadReadParams"),
-                "list_fields": _struct_fields(thread.text, "ThreadListParams"),
-                "turns_list_fields": _struct_fields(thread.text, "ThreadTurnsListParams"),
-                "items_list_fields": _struct_fields(thread.text, "ThreadItemsListParams"),
-                "resume_precedence": "for non-running threads: history > non-empty path > thread_id; a running thread_id rejoins the live thread and a supplied path becomes a consistency check",
-            },
-            "turn": {
-                "statuses": turn_statuses,
-                "items_views": item_views,
-                "data_fields": _struct_fields(thread_data.text, "Turn"),
-                "start_fields": _struct_fields(turn.text, "TurnStartParams"),
-                "steer_fields": _struct_fields(turn.text, "TurnSteerParams"),
-                "interrupt_fields": _struct_fields(turn.text, "TurnInterruptParams"),
-                "steer_precondition": "expectedTurnId must match the currently active turn",
-            },
-            "pagination": {
-                "thread_list": "opaque cursor + optional limit over thread summaries",
-                "turn_list": "threadId + opaque cursor + optional limit; use for paginated history instead of full thread/read hydration",
-                "item_list": "threadId + optional turnId + opaque cursor + optional limit across persisted item history",
-                "items_view": "NotLoaded, Summary, and Full describe hydration independently of turn status",
-            },
-            "evidence": {
-                "common": _evidence(common, "client_request_definitions/server_notification_definitions"),
-                "thread": _evidence(thread, "ThreadStartParams/ThreadResumeParams/pagination params"),
-                "thread_data": _evidence(thread_data, "Thread/Turn/ThreadHistoryMode/TurnItemsView"),
-                "turn": _evidence(turn, "TurnStatus/TurnStartParams/TurnSteerParams/TurnInterruptParams"),
-                "item": _evidence(item, "ThreadItem"),
-                "rpc": _evidence(rpc, "JSONRPCMessage/JSONRPCRequest/JSONRPCNotification"),
-            },
-            "semantic_complete": complete,
-        }
+        body = _build_contract_body(
+            common=common,
+            thread=thread,
+            thread_data=thread_data,
+            turn=turn,
+            item=item,
+            rpc=rpc,
+            requests=requests,
+            notifications=notifications,
+            thread_statuses=thread_statuses,
+            turn_statuses=turn_statuses,
+            history_modes=history_modes,
+            item_views=item_views,
+            complete=complete,
+        )
         body["semantic_digest"] = hashlib.sha256(_canonical(body)).hexdigest()
         return ExtractorResult(
             extractor_id=EXTRACTOR_ID,

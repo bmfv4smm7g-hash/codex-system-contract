@@ -387,6 +387,35 @@
       "status": "active_package"
     },
     {
+      "extractor_ids": [
+        "extractor.app_server_rpc"
+      ],
+      "id": "app_server_rpc",
+      "profile_assertions": {
+        "app_server_rpc_only": {
+          "required_extractors_contains": [
+            "extractor.app_server_rpc"
+          ]
+        },
+        "codex_wire_full": {
+          "required_extractors_contains": [
+            "extractor.app_server_rpc"
+          ]
+        },
+        "hybrid_v19": {
+          "required_extractors_contains": [
+            "extractor.app_server_rpc"
+          ]
+        }
+      },
+      "required_resources": [
+        "extractors/app_server_rpc.py",
+        "proof_schema_templates/app-server-rpc-lifecycle-v1.schema.json",
+        "coverage_profiles.v3.json"
+      ],
+      "status": "active_package"
+    },
+    {
       "extractor_ids": [],
       "id": "canonical_system_contract",
       "profile_assertions": {
@@ -404,7 +433,8 @@
             "extractor.responses_request",
             "extractor.responses_lite",
             "extractor.response_events",
-            "extractor.redirect_headers"
+            "extractor.redirect_headers",
+            "extractor.app_server_rpc"
           ]
         }
       },
