@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.codex-system-contract.invalid/responses/responses-lite-semantics-v1.schema.json",
+  "title": "Codex Responses Lite semantics",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schema_version", "ownership", "activation", "transformation", "transport_markers", "evidence", "semantic_complete", "semantic_digest"],
+  "properties": {
+    "$schema": {"const": "https://schemas.codex-system-contract.invalid/responses/responses-lite-semantics-v1.schema.json"},
+    "schema_version": {"const": "1.0.0"},
+    "ownership": {"$ref": "#/$defs/ownership"},
+    "activation": {"const": "model_info.use_responses_lite"},
+    "transformation": {"type": "object", "minProperties": 6, "additionalProperties": true},
+    "transport_markers": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["http_header", "websocket_client_metadata"],
+      "properties": {
+        "http_header": {"type": "string", "minLength": 1},
+        "websocket_client_metadata": {"type": "string", "minLength": 1}
+      }
+    },
+    "evidence": {"type": "object", "minProperties": 1, "additionalProperties": {"$ref": "#/$defs/evidence"}},
+    "semantic_complete": {"type": "boolean"},
+    "semantic_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "$defs": {
+    "ownership": {"type": "object", "additionalProperties": false, "required": ["owns", "does_not_own"], "properties": {"owns": {"type": "array", "items": {"type": "string"}, "minItems": 1, "uniqueItems": true}, "does_not_own": {"type": "array", "items": {"type": "string"}, "minItems": 1, "uniqueItems": true}}},
+    "evidence": {"type": "object", "additionalProperties": false, "required": ["source_spec_id", "path", "sha256", "git_blob_sha", "symbol"], "properties": {"source_spec_id": {"type": "string", "minLength": 1}, "path": {"type": "string", "minLength": 1}, "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "git_blob_sha": {"type": ["string", "null"]}, "symbol": {"type": "string", "minLength": 1}}}
+  }
+}
