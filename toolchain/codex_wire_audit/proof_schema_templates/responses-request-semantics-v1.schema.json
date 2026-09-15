@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.codex-system-contract.invalid/responses/responses-request-semantics-v1.schema.json",
+  "title": "Codex Responses request semantics",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schema_version", "ownership", "request_shape", "construction", "http_transport", "websocket_transport", "evidence", "semantic_complete", "semantic_digest"],
+  "properties": {
+    "$schema": {"const": "https://schemas.codex-system-contract.invalid/responses/responses-request-semantics-v1.schema.json"},
+    "schema_version": {"const": "1.0.0"},
+    "ownership": {"$ref": "#/$defs/ownership"},
+    "request_shape": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["http_fields", "websocket_fields", "websocket_envelope_type", "endpoint_paths"],
+      "properties": {
+        "http_fields": {"type": "array", "items": {"type": "string"}, "minItems": 8, "uniqueItems": true},
+        "websocket_fields": {"type": "array", "items": {"type": "string"}, "minItems": 10, "uniqueItems": true},
+        "websocket_envelope_type": {"const": "response.create"},
+        "endpoint_paths": {"type": "object", "minProperties": 1, "additionalProperties": {"type": "string", "pattern": "^/"}}
+      }
+    },
+    "construction": {"$ref": "#/$defs/semanticSection"},
+    "http_transport": {"$ref": "#/$defs/semanticSection"},
+    "websocket_transport": {"$ref": "#/$defs/semanticSection"},
+    "evidence": {"type": "object", "minProperties": 4, "additionalProperties": {"$ref": "#/$defs/evidence"}},
+    "semantic_complete": {"type": "boolean"},
+    "semantic_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "$defs": {
+    "ownership": {"type": "object", "additionalProperties": false, "required": ["owns", "does_not_own"], "properties": {"owns": {"type": "array", "items": {"type": "string"}, "minItems": 1, "uniqueItems": true}, "does_not_own": {"type": "array", "items": {"type": "string"}, "minItems": 1, "uniqueItems": true}}},
+    "semanticSection": {"type": "object", "minProperties": 2, "additionalProperties": true},
+    "evidence": {"type": "object", "additionalProperties": false, "required": ["source_spec_id", "path", "sha256", "git_blob_sha", "symbol"], "properties": {"source_spec_id": {"type": "string", "minLength": 1}, "path": {"type": "string", "minLength": 1}, "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "git_blob_sha": {"type": ["string", "null"]}, "symbol": {"type": "string", "minLength": 1}}}
+  }
+}

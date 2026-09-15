@@ -52,8 +52,16 @@
       ]
     },
     "source_spec.base.common": {
-      "expected_symbols": [],
-      "extractor_ids": [],
+      "expected_symbols": [
+        "ResponsesApiRequest",
+        "ResponseCreateWsRequest",
+        "ResponsesWsRequest",
+        "ResponseEvent"
+      ],
+      "extractor_ids": [
+        "extractor.response_events",
+        "extractor.responses_request"
+      ],
       "group": "base",
       "id": "source_spec.base.common",
       "legacy_key": "common",
@@ -62,7 +70,9 @@
       ],
       "required": true,
       "roles": [
-        "legacy_base"
+        "legacy_base",
+        "responses_request",
+        "response_events"
       ]
     },
     "source_spec.base.compact": {
@@ -80,8 +90,18 @@
       ]
     },
     "source_spec.base.core": {
-      "expected_symbols": [],
-      "extractor_ids": [],
+      "expected_symbols": [
+        "build_responses_request",
+        "responses_request_properties_match",
+        "build_ws_client_metadata",
+        "use_responses_lite",
+        "ResponseItem::AdditionalTools",
+        "add_responses_lite_header"
+      ],
+      "extractor_ids": [
+        "extractor.responses_lite",
+        "extractor.responses_request"
+      ],
       "group": "base",
       "id": "source_spec.base.core",
       "legacy_key": "core",
@@ -90,7 +110,9 @@
       ],
       "required": true,
       "roles": [
-        "legacy_base"
+        "legacy_base",
+        "responses_request",
+        "responses_lite"
       ]
     },
     "source_spec.base.default_client": {
@@ -122,8 +144,14 @@
       ]
     },
     "source_spec.base.http": {
-      "expected_symbols": [],
-      "extractor_ids": [],
+      "expected_symbols": [
+        "ResponsesEndpoint",
+        "ResponsesClient",
+        "stream_request"
+      ],
+      "extractor_ids": [
+        "extractor.responses_request"
+      ],
       "group": "base",
       "id": "source_spec.base.http",
       "legacy_key": "http",
@@ -132,7 +160,8 @@
       ],
       "required": true,
       "roles": [
-        "legacy_base"
+        "legacy_base",
+        "responses_request"
       ]
     },
     "source_spec.base.inference": {
@@ -220,8 +249,14 @@
       ]
     },
     "source_spec.base.response_sse": {
-      "expected_symbols": [],
-      "extractor_ids": [],
+      "expected_symbols": [
+        "ResponsesStreamEvent",
+        "process_responses_event",
+        "spawn_response_stream"
+      ],
+      "extractor_ids": [
+        "extractor.response_events"
+      ],
       "group": "base",
       "id": "source_spec.base.response_sse",
       "legacy_key": "response_sse",
@@ -230,12 +265,22 @@
       ],
       "required": true,
       "roles": [
-        "legacy_base"
+        "legacy_base",
+        "response_events"
       ]
     },
     "source_spec.base.ws": {
-      "expected_symbols": [],
-      "extractor_ids": [],
+      "expected_symbols": [
+        "ResponsesWebsocketConnection",
+        "ResponsesWebsocketClient",
+        "stream_request",
+        "process_responses_event",
+        "run_websocket_response_stream"
+      ],
+      "extractor_ids": [
+        "extractor.response_events",
+        "extractor.responses_request"
+      ],
       "group": "base",
       "id": "source_spec.base.ws",
       "legacy_key": "ws",
@@ -244,7 +289,9 @@
       ],
       "required": true,
       "roles": [
-        "legacy_base"
+        "legacy_base",
+        "responses_request",
+        "response_events"
       ]
     },
     "source_spec.extra.app_server_account": {

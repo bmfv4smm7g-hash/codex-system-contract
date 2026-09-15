@@ -342,6 +342,45 @@
       "status": "active_package"
     },
     {
+      "extractor_ids": [
+        "extractor.responses_request",
+        "extractor.responses_lite",
+        "extractor.response_events"
+      ],
+      "id": "responses_protocol",
+      "profile_assertions": {
+        "codex_wire_full": {
+          "required_extractors_contains": [
+            "extractor.responses_request",
+            "extractor.responses_lite",
+            "extractor.response_events"
+          ]
+        },
+        "hybrid_v19": {
+          "required_extractors_contains": [
+            "extractor.responses_request",
+            "extractor.responses_lite",
+            "extractor.response_events"
+          ]
+        },
+        "responses_only": {
+          "required_extractors_contains": [
+            "extractor.responses_request",
+            "extractor.responses_lite",
+            "extractor.response_events"
+          ]
+        }
+      },
+      "required_resources": [
+        "extractors/responses_protocol.py",
+        "proof_schema_templates/responses-request-semantics-v1.schema.json",
+        "proof_schema_templates/responses-lite-semantics-v1.schema.json",
+        "proof_schema_templates/response-events-semantics-v1.schema.json",
+        "coverage_profiles.v3.json"
+      ],
+      "status": "active_package"
+    },
+    {
       "extractor_ids": [],
       "id": "canonical_system_contract",
       "profile_assertions": {
@@ -355,7 +394,10 @@
             "extractor.plugin_runtime",
             "extractor.execution_environment",
             "extractor.routing_transport",
-            "extractor.mcp_projection"
+            "extractor.mcp_projection",
+            "extractor.responses_request",
+            "extractor.responses_lite",
+            "extractor.response_events"
           ]
         }
       },

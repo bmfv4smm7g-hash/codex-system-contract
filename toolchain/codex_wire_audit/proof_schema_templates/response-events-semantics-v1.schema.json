@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.codex-system-contract.invalid/responses/response-events-semantics-v1.schema.json",
+  "title": "Codex Responses event semantics",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schema_version", "ownership", "normalized_event_variants", "wire_event_kinds", "stream_headers", "dispatch", "header_projection", "evidence", "semantic_complete", "semantic_digest"],
+  "properties": {
+    "$schema": {"const": "https://schemas.codex-system-contract.invalid/responses/response-events-semantics-v1.schema.json"},
+    "schema_version": {"const": "1.0.0"},
+    "ownership": {"$ref": "#/$defs/ownership"},
+    "normalized_event_variants": {"type": "array", "items": {"type": "string"}, "minItems": 8, "uniqueItems": true},
+    "wire_event_kinds": {"type": "array", "items": {"type": "string"}, "minItems": 8, "uniqueItems": true},
+    "stream_headers": {"type": "object", "additionalProperties": {"type": ["string", "null"]}},
+    "dispatch": {"type": "object", "minProperties": 4, "additionalProperties": true},
+    "header_projection": {"type": "object", "minProperties": 4, "additionalProperties": true},
+    "evidence": {"type": "object", "minProperties": 3, "additionalProperties": {"$ref": "#/$defs/evidence"}},
+    "semantic_complete": {"type": "boolean"},
+    "semantic_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "$defs": {
+    "ownership": {"type": "object", "additionalProperties": false, "required": ["owns", "does_not_own"], "properties": {"owns": {"type": "array", "items": {"type": "string"}, "minItems": 1, "uniqueItems": true}, "does_not_own": {"type": "array", "items": {"type": "string"}, "minItems": 1, "uniqueItems": true}}},
+    "evidence": {"type": "object", "additionalProperties": false, "required": ["source_spec_id", "path", "sha256", "git_blob_sha", "symbol"], "properties": {"source_spec_id": {"type": "string", "minLength": 1}, "path": {"type": "string", "minLength": 1}, "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "git_blob_sha": {"type": ["string", "null"]}, "symbol": {"type": "string", "minLength": 1}}}
+  }
+}

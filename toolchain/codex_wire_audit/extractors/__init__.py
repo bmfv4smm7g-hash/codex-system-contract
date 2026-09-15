@@ -15,6 +15,7 @@ _BUILTIN_MODULES = (
     "execution_environment",
     "routing_transport",
     "mcp_projection",
+    "responses_protocol",
 )
 for _module_name in _BUILTIN_MODULES:
     import_module(f"{__name__}.{_module_name}")
