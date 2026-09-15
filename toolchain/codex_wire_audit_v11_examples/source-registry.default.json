@@ -1,11 +1,11 @@
 {
   "counts": {
     "base": 16,
-    "extra": 89,
-    "optional": 115,
+    "extra": 93,
+    "optional": 119,
     "required": 16,
     "surface": 26,
-    "total": 131
+    "total": 135
   },
   "schema_version": "1.0.0",
   "sources": {
@@ -1771,6 +1771,86 @@
       "required": false,
       "roles": [
         "legacy_extra"
+      ]
+    },
+    "source_spec.extra.routing_outbound_proxy": {
+      "expected_symbols": [
+        "OutboundProxyPolicy",
+        "HttpClientFactory",
+        "resolve_proxy_route"
+      ],
+      "extractor_ids": [
+        "extractor.routing_transport"
+      ],
+      "group": "extra",
+      "id": "source_spec.extra.routing_outbound_proxy",
+      "legacy_key": "routing_outbound_proxy",
+      "path_candidates": [
+        "codex-rs/http-client/src/outbound_proxy.rs"
+      ],
+      "required": false,
+      "roles": [
+        "routing_transport"
+      ]
+    },
+    "source_spec.extra.routing_proxy_config": {
+      "expected_symbols": [
+        "NetworkProxyConfig",
+        "NetworkMode",
+        "resolve_runtime"
+      ],
+      "extractor_ids": [
+        "extractor.routing_transport"
+      ],
+      "group": "extra",
+      "id": "source_spec.extra.routing_proxy_config",
+      "legacy_key": "routing_proxy_config",
+      "path_candidates": [
+        "codex-rs/network-proxy/src/config.rs"
+      ],
+      "required": false,
+      "roles": [
+        "routing_transport"
+      ]
+    },
+    "source_spec.extra.routing_proxy_spec": {
+      "expected_symbols": [
+        "NetworkProxySpec",
+        "start_proxy",
+        "environment_policy"
+      ],
+      "extractor_ids": [
+        "extractor.routing_transport"
+      ],
+      "group": "extra",
+      "id": "source_spec.extra.routing_proxy_spec",
+      "legacy_key": "routing_proxy_spec",
+      "path_candidates": [
+        "codex-rs/core/src/config/network_proxy_spec.rs"
+      ],
+      "required": false,
+      "roles": [
+        "routing_transport"
+      ]
+    },
+    "source_spec.extra.routing_requirements": {
+      "expected_symbols": [
+        "NetworkRequirementsToml",
+        "managed_allowed_domains_only",
+        "header_injections"
+      ],
+      "extractor_ids": [
+        "extractor.routing_transport"
+      ],
+      "group": "extra",
+      "id": "source_spec.extra.routing_requirements",
+      "legacy_key": "routing_requirements",
+      "path_candidates": [
+        "codex-rs/config/src/config_requirements.rs"
+      ],
+      "required": false,
+      "roles": [
+        "routing_transport"
       ]
     },
     "source_spec.extra.tool_namespaces_info": {

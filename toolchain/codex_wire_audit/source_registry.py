@@ -310,6 +310,12 @@ def from_legacy_maps(
         ("source_spec.extra.environment_manager", "environment_manager", "codex-rs/exec-server/src/environment.rs", ("EnvironmentManager", "EnvironmentObservedStatus", "default_environment_ids")),
         ("source_spec.extra.environment_turn_context", "environment_turn_context", "codex-rs/core/src/session/turn_context.rs", ("TurnEnvironment", "shell_environment_policy", "workspace_roots")),
     )
+    routing_specs = (
+        ("source_spec.extra.routing_proxy_spec", "routing_proxy_spec", "codex-rs/core/src/config/network_proxy_spec.rs", ("NetworkProxySpec", "start_proxy", "environment_policy")),
+        ("source_spec.extra.routing_proxy_config", "routing_proxy_config", "codex-rs/network-proxy/src/config.rs", ("NetworkProxyConfig", "NetworkMode", "resolve_runtime")),
+        ("source_spec.extra.routing_requirements", "routing_requirements", "codex-rs/config/src/config_requirements.rs", ("NetworkRequirementsToml", "managed_allowed_domains_only", "header_injections")),
+        ("source_spec.extra.routing_outbound_proxy", "routing_outbound_proxy", "codex-rs/http-client/src/outbound_proxy.rs", ("OutboundProxyPolicy", "HttpClientFactory", "resolve_proxy_route")),
+    )
     specs.append(SourceSpec(
         id="source_spec.extra.generated_config_schema",
         legacy_key="generated_config_schema",
@@ -350,5 +356,11 @@ def from_legacy_maps(
         environment_specs,
         role="execution_environment",
         extractor_id="extractor.execution_environment",
+    )
+    _append_optional_specs(
+        specs,
+        routing_specs,
+        role="routing_transport",
+        extractor_id="extractor.routing_transport",
     )
     return SourceRegistry(specs)

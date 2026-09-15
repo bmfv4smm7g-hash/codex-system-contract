@@ -100,7 +100,7 @@
     },
     {
       "allow_legacy_reconstruction": true,
-      "description": "Transition profile: canonical generated config schema, config-to-surface graph, turn metadata, context management, prompt/context composition, execution authority, plugin runtime capabilities, and execution-environment context; remaining protocol families may still use the frozen legacy adapter.",
+      "description": "Transition profile: canonical generated config schema, config-to-surface graph, turn metadata, context management, prompt/context composition, execution authority, plugin runtime capabilities, execution-environment context, and routing/proxy transport; remaining protocol families may still use the frozen legacy adapter.",
       "id": "hybrid_v19",
       "required_dimensions": [
         "schema",
@@ -116,7 +116,8 @@
         "extractor.prompt_context",
         "extractor.execution_policy",
         "extractor.plugin_runtime",
-        "extractor.execution_environment"
+        "extractor.execution_environment",
+        "extractor.routing_transport"
       ],
       "required_history_keys": [
         "key.turn_metadata.code_mode_tool_names",
@@ -209,7 +210,7 @@
     },
     {
       "allow_legacy_reconstruction": false,
-      "description": "Repository-wide canonical wire, local-storage, prompt-context, execution-policy, plugin-runtime, and execution-environment proof. Legacy reconstruction cannot satisfy it, and historical metadata transitions and runtime conformance are part of the proof surface.",
+      "description": "Repository-wide canonical wire, local-storage, prompt-context, execution-policy, plugin-runtime, execution-environment, and routing/proxy proof. Legacy reconstruction cannot satisfy it, and historical metadata transitions and runtime conformance are part of the proof surface.",
       "id": "codex_wire_full",
       "required_dimensions": [
         "schema",
@@ -233,7 +234,8 @@
         "extractor.prompt_context",
         "extractor.execution_policy",
         "extractor.plugin_runtime",
-        "extractor.execution_environment"
+        "extractor.execution_environment",
+        "extractor.routing_transport"
       ],
       "required_history_keys": [
         "key.turn_metadata.code_mode_tool_names",
@@ -389,6 +391,22 @@
       ],
       "required_extractors": [
         "extractor.execution_environment"
+      ],
+      "required_history_keys": [],
+      "required_runtime_scenarios": [],
+      "version": "1.0.0"
+    },
+    {
+      "allow_legacy_reconstruction": false,
+      "description": "Focused source-derived routing/proxy proof without claiming permission authority, environment construction, provider protocol semantics, or plugin/MCP capabilities.",
+      "id": "routing_transport_only",
+      "required_dimensions": [
+        "schema",
+        "profile",
+        "provenance"
+      ],
+      "required_extractors": [
+        "extractor.routing_transport"
       ],
       "required_history_keys": [],
       "required_runtime_scenarios": [],
