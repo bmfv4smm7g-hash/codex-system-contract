@@ -386,6 +386,11 @@ def from_legacy_maps(
         ("source_spec.extra.local_storage_state_threads", "local_storage_state_threads", "codex-rs/state/src/runtime/threads.rs", ("replace_rollout_path_if_current", "UPDATE threads SET rollout_path")),
         ("source_spec.extra.local_storage_threads_migration", "local_storage_threads_migration", "codex-rs/state/migrations/0001_threads.sql", ("CREATE TABLE threads", "id TEXT PRIMARY KEY", "rollout_path TEXT NOT NULL")),
         ("source_spec.extra.local_storage_history_materialization", "local_storage_history_materialization", "codex-rs/thread-store/src/local/thread_history_materialization.rs", ("materialize_to_sqlite", "next_byte_offset", "next_ordinal")),
+        ("source_spec.extra.local_storage_local_store", "local_storage_local_store", "codex-rs/thread-store/src/local/mod.rs", ("LocalThreadStore", "live_recorders", "ensure_live_recorder_absent")),
+        ("source_spec.extra.local_storage_live_writer", "local_storage_live_writer", "codex-rs/thread-store/src/local/live_writer.rs", ("SQLite is a rebuildable view.", "durable_write", "materialize_to_sqlite")),
+        ("source_spec.extra.local_storage_rollout_resolver", "local_storage_rollout_resolver", "codex-rs/thread-store/src/local/thread_rollout_resolver.rs", ("resolve_current", "LookupScope", "rollout_path")),
+        ("source_spec.extra.local_storage_model_context", "local_storage_model_context", "codex-rs/thread-store/src/local/model_context.rs", ("load_latest_model_context", "ReverseJsonlScanner", "resolve_rollout_lineage")),
+        ("source_spec.extra.local_storage_history_read", "local_storage_history_read", "codex-rs/thread-store/src/local/thread_history/read.rs", ("list_turns", "list_items", "thread_history_db")),
         ("source_spec.extra.local_storage_shell_snapshot", "local_storage_shell_snapshot", "codex-rs/core/src/shell_snapshot.rs", ("SNAPSHOT_DIR", "SNAPSHOT_RETENTION", "session_id")),
         ("source_spec.extra.local_storage_visualization", "local_storage_visualization", "codex-rs/tui/src/inline_visualization.rs", ("visualizations", "visualization-viewers", "thread_id")),
     )

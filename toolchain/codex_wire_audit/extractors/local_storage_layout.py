@@ -146,6 +146,27 @@ def build_rollouts(*, archive_dir: Any, session_index_file: Any, sessions_dir: A
     }
 
 
+def build_read_paths() -> dict[str, Any]:
+    return {
+        "cold_resume_model_context": {"selected_rollout_authority": "state_5.sqlite rollout_path for paginated threads after live-writer resolution", "source": "selected immutable rollout JSONL lineage", "reader": "load_latest_model_context", "scan": "reverse JSONL scan across resolved lineage", "uses_thread_history_projection": False},
+        "paginated_query_history": {"source": "$SQLITE_HOME/thread_history_1.sqlite", "apis": ["list_turns", "list_items"], "persists_across_restart": True, "full_replay_on_restart": False},
+    }
+
+def build_projection_semantics() -> dict[str, Any]:
+    return {
+        "canonical_source": "rollout JSONL",
+        "projection": "$SQLITE_HOME/thread_history_1.sqlite",
+        "role": "persistent rebuildable acceleration view",
+        "write_order": ["durable JSONL write", "incremental SQLite projection"],
+        "checkpoint": ["next_rollout_byte_offset", "next_rollout_ordinal"],
+        "update_mode": "project durable JSONL suffix after persisted checkpoint",
+        "projected_prefix_must_be_immutable": True,
+        "may_lag_after_failure": True,
+        "may_get_ahead": False,
+        "rebuild_on_restart": False,
+        "external_rewrite": {"supported": False, "shrink_error": "durable rollout shrank before projection", "automatic_reset": False},
+    }
+
 def build_databases(*, busy_timeout_seconds: Any, database_catalog: Any, max_connections: Any, threads_has_session_id_column: Any) -> dict[str, Any]:
     return {
         "root": "$SQLITE_HOME",
@@ -175,9 +196,9 @@ def build_databases(*, busy_timeout_seconds: Any, database_catalog: Any, max_con
             "mutation_scope_on_revert": "physical rollout_path only",
         },
         "authority_model": {
-            "rollout_jsonl": "canonical durable replay history",
-            "state_database": "mutable metadata index and current-rollout pointer",
-            "thread_history_database": "derived paginated projection",
+            "rollout_jsonl": "canonical durable append-only replay history",
+            "state_database": "operational metadata plus authoritative current-rollout pointer for paginated threads",
+            "thread_history_database": "persistent rebuildable acceleration projection derived from rollout JSONL",
             "session_index_jsonl": "append-only display-name index",
         },
     }

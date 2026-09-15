@@ -158,7 +158,7 @@
       },
       "required_resources": [
         "extractors/local_storage.py",
-        "proof_schema_templates/local-storage-semantics-v1.schema.json",
+        "proof_schema_templates/local-storage-semantics-v2.schema.json",
         "coverage_profiles.v3.json",
         "extractors/local_storage_specs.py",
         "extractors/local_storage_sources.py",

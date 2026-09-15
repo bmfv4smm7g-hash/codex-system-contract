@@ -23,7 +23,10 @@ def build_transitions(*, archive_dir: Any, sessions_dir: Any) -> dict[str, Any]:
             "creates_replacement_rollout": False,
         },
         "revert": {
-            "precondition": "paginated thread with state database",
+            "precondition": "paginated thread with state database and no live recorder",
+            "cutoff_parameter": "before_turn_id",
+            "cutoff_granularity": "turn boundary",
+            "supports_intra_turn_item_cutoff": False,
             "logical_thread": "same thread_id",
             "session_id": "preserved verbatim from source_meta.session_id",
             "rollout_id": "new UUID",
@@ -145,6 +148,14 @@ def build_invariants() -> list[dict[str, Any]]:
             "statement": (
                 "paginated persistence can be used by both a stable-thread revert and a new-thread fork"
             ),
+        },
+        {
+            "id": "local_storage.thread_history_sqlite_is_acceleration",
+            "statement": "thread_history_1.sqlite is a persistent acceleration projection; rollout JSONL remains canonical durable history",
+        },
+        {
+            "id": "local_storage.external_rewrite_does_not_auto_rebuild_projection",
+            "statement": "the incremental projector assumes an immutable projected prefix and does not automatically rebuild after external JSONL rewrite",
         },
         {
             "id": "local_storage.sidecars_follow_thread_identity",

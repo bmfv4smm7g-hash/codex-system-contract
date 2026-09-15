@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 EXTRACTOR_ID = "extractor.local_storage"
-SCHEMA_VERSION = "1.0.0"
+SCHEMA_VERSION = "2.0.0"
 SOURCE_IDS = {
     "home_dir": "source_spec.extra.local_storage_home_dir",
     "thread_types": "source_spec.extra.local_storage_thread_types",
@@ -22,6 +22,11 @@ SOURCE_IDS = {
     "state_threads": "source_spec.extra.local_storage_state_threads",
     "threads_migration": "source_spec.extra.local_storage_threads_migration",
     "history_materialization": "source_spec.extra.local_storage_history_materialization",
+    "local_store": "source_spec.extra.local_storage_local_store",
+    "live_writer": "source_spec.extra.local_storage_live_writer",
+    "rollout_resolver": "source_spec.extra.local_storage_rollout_resolver",
+    "model_context": "source_spec.extra.local_storage_model_context",
+    "history_read": "source_spec.extra.local_storage_history_read",
     "shell_snapshot": "source_spec.extra.local_storage_shell_snapshot",
     "visualization": "source_spec.extra.local_storage_visualization",
     "config_toml": "source_spec.extra.config_toml",
@@ -144,6 +149,11 @@ _REQUIRED_MARKERS: dict[str, tuple[str, ...]] = {
         ".history_base",
         "apply_projection(",
     ),
+    "local_store": ("LocalThreadStore", "live_recorders", "ensure_live_recorder_absent"),
+    "live_writer": ("SQLite is a rebuildable view.", "durable_write", "materialize_to_sqlite"),
+    "rollout_resolver": ("SQLite's selected rollout path", "resolve_current", "LookupScope"),
+    "model_context": ("load_latest_model_context", "ReverseJsonlScanner", "resolve_rollout_lineage"),
+    "history_read": ("list_turns", "list_items", "thread_history_db"),
     "shell_snapshot": (
         'const SNAPSHOT_DIR: &str = "shell_snapshots";',
         "Duration::from_secs(60 * 60 * 24 * 3)",
