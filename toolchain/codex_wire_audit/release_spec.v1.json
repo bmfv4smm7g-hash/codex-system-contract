@@ -29,10 +29,16 @@
   },
   "capability_claims": [
     {
-      "extractor_ids": ["extractor.turn_metadata"],
+      "extractor_ids": [
+        "extractor.turn_metadata"
+      ],
       "id": "turn_metadata",
       "profile_assertions": {
-        "hybrid_v19": {"required_extractors_contains": ["extractor.turn_metadata"]}
+        "hybrid_v19": {
+          "required_extractors_contains": [
+            "extractor.turn_metadata"
+          ]
+        }
       },
       "required_resources": [
         "extractors/turn_metadata.py",
@@ -42,18 +48,26 @@
     },
     {
       "container_verifier": "codex_wire_audit.context_management_reference:verify_context_management_container",
-      "extractor_ids": ["extractor.context_management"],
+      "extractor_ids": [
+        "extractor.context_management"
+      ],
       "id": "context_management",
       "profile_assertions": {
         "codex_wire_full": {
-          "required_extractors_contains": ["extractor.context_management"],
+          "required_extractors_contains": [
+            "extractor.context_management"
+          ],
           "required_runtime_scenarios_contains": [
             "context_management_activation",
             "context_window_rollover",
             "history_notes_retrieval"
           ]
         },
-        "hybrid_v19": {"required_extractors_contains": ["extractor.context_management"]}
+        "hybrid_v19": {
+          "required_extractors_contains": [
+            "extractor.context_management"
+          ]
+        }
       },
       "required_resources": [
         "extractors/context_management.py",
@@ -71,7 +85,11 @@
       "extractor_ids": [],
       "id": "metadata_history",
       "profile_assertions": {
-        "hybrid_v19": {"required_dimensions_contains": ["metadata_history"]}
+        "hybrid_v19": {
+          "required_dimensions_contains": [
+            "metadata_history"
+          ]
+        }
       },
       "required_resources": [
         "metadata_history.py",
@@ -83,18 +101,32 @@
       "status": "active_package"
     },
     {
-      "extractor_ids": ["extractor.config_effects"],
+      "extractor_ids": [
+        "extractor.config_effects"
+      ],
       "id": "config_surface",
       "profile_assertions": {
         "codex_wire_full": {
-          "required_extractors_contains": ["extractor.config_effects"],
-          "required_runtime_scenarios_contains": ["config_schema_surface_graph"]
+          "required_extractors_contains": [
+            "extractor.config_effects"
+          ],
+          "required_runtime_scenarios_contains": [
+            "config_schema_surface_graph"
+          ]
         },
         "config_surface_only": {
-          "required_extractors_contains": ["extractor.config_effects"],
-          "required_runtime_scenarios_contains": ["config_schema_surface_graph"]
+          "required_extractors_contains": [
+            "extractor.config_effects"
+          ],
+          "required_runtime_scenarios_contains": [
+            "config_schema_surface_graph"
+          ]
         },
-        "hybrid_v19": {"required_extractors_contains": ["extractor.config_effects"]}
+        "hybrid_v19": {
+          "required_extractors_contains": [
+            "extractor.config_effects"
+          ]
+        }
       },
       "required_resources": [
         "config_schema_catalog.py",
@@ -108,11 +140,21 @@
       "status": "active_package"
     },
     {
-      "extractor_ids": ["extractor.local_storage"],
+      "extractor_ids": [
+        "extractor.local_storage"
+      ],
       "id": "local_storage",
       "profile_assertions": {
-        "codex_wire_full": {"required_extractors_contains": ["extractor.local_storage"]},
-        "local_storage_only": {"required_extractors_contains": ["extractor.local_storage"]}
+        "codex_wire_full": {
+          "required_extractors_contains": [
+            "extractor.local_storage"
+          ]
+        },
+        "local_storage_only": {
+          "required_extractors_contains": [
+            "extractor.local_storage"
+          ]
+        }
       },
       "required_resources": [
         "extractors/local_storage.py",
@@ -126,12 +168,26 @@
       "status": "active_package"
     },
     {
-      "extractor_ids": ["extractor.prompt_context"],
+      "extractor_ids": [
+        "extractor.prompt_context"
+      ],
       "id": "prompt_context",
       "profile_assertions": {
-        "codex_wire_full": {"required_extractors_contains": ["extractor.prompt_context"]},
-        "hybrid_v19": {"required_extractors_contains": ["extractor.prompt_context"]},
-        "prompt_context_only": {"required_extractors_contains": ["extractor.prompt_context"]}
+        "codex_wire_full": {
+          "required_extractors_contains": [
+            "extractor.prompt_context"
+          ]
+        },
+        "hybrid_v19": {
+          "required_extractors_contains": [
+            "extractor.prompt_context"
+          ]
+        },
+        "prompt_context_only": {
+          "required_extractors_contains": [
+            "extractor.prompt_context"
+          ]
+        }
       },
       "required_resources": [
         "extractors/prompt_context.py",
@@ -197,8 +253,12 @@
       "ci-out",
       "htmlcov"
     ],
-    "exclude_directory_suffixes": [".egg-info"],
-    "exclude_root_directory_globs": ["release_v*"],
+    "exclude_directory_suffixes": [
+      ".egg-info"
+    ],
+    "exclude_root_directory_globs": [
+      "release_v*"
+    ],
     "exclude_root_globs": [
       ".coverage",
       "codex_wire_audit_v*_source_capabilities.json",
