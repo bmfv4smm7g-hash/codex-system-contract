@@ -255,6 +255,35 @@
       "status": "active_package"
     },
     {
+      "extractor_ids": [
+        "extractor.execution_environment"
+      ],
+      "id": "execution_environment",
+      "profile_assertions": {
+        "codex_wire_full": {
+          "required_extractors_contains": [
+            "extractor.execution_environment"
+          ]
+        },
+        "execution_environment_only": {
+          "required_extractors_contains": [
+            "extractor.execution_environment"
+          ]
+        },
+        "hybrid_v19": {
+          "required_extractors_contains": [
+            "extractor.execution_environment"
+          ]
+        }
+      },
+      "required_resources": [
+        "extractors/execution_environment.py",
+        "proof_schema_templates/execution-environment-semantics-v1.schema.json",
+        "coverage_profiles.v3.json"
+      ],
+      "status": "active_package"
+    },
+    {
       "extractor_ids": [],
       "id": "canonical_system_contract",
       "profile_assertions": {
@@ -265,7 +294,8 @@
             "extractor.config_effects",
             "extractor.prompt_context",
             "extractor.execution_policy",
-            "extractor.plugin_runtime"
+            "extractor.plugin_runtime",
+            "extractor.execution_environment"
           ]
         }
       },
