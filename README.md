@@ -1,42 +1,83 @@
-# Codex Surface Generator
+# Codex System Contract
 
-Schema and wire-contract generator for the OpenAI Codex CLI. It parses Codex
-Rust sources at a pinned upstream revision and emits validated,
-machine-readable contracts for HTTP/WebSocket traffic, endpoint addressing,
-headers, turn metadata, tools, authentication, context management,
-configuration shape, local thread storage, rollout identity/layout, and the
-relationships between those surfaces.
+Source-derived, evidence-bound contracts for the OpenAI Codex system: protocol,
+configuration, prompt/context composition, tools, plugins, policy, execution
+environment, storage, routing, agents, host integration, and runtime behavior.
+
+The generator parses exact Codex source revisions and emits one versioned machine
+contract with provenance. Human architecture documents explain ownership and
+boundaries; generated JSON owns exact current facts for its pinned source.
 
 - Active source/tooling line: **v19 / package 12.0.0**
-- Reviewed generator baseline: `openai/codex@6af345407d9c2a568da9d01b6c4b81a9e61495c0`
+- Evolution migration anchor: `openai/codex@6af345407d9c2a568da9d01b6c4b81a9e61495c0`
 - Checked-in published release snapshot: **v18 / package 11.0.0**
-- Layout:
-  - [`toolchain/`](toolchain/) — generator, schemas, profiles, tests, and release pipeline
-  - [`release/`](release/) — currently published v18 wheel, sdist, checksums, validation, and attestations
-  - [`ARCHITECTURE_DOCS_REVIEW.md`](ARCHITECTURE_DOCS_REVIEW.md) — evidence classes, source pins, review status, and known boundaries for the documentation set
-  - [`toolchain/CONFIG_SURFACE_ARCHITECTURE.md`](toolchain/CONFIG_SURFACE_ARCHITECTURE.md) — how generated config shape, feature identity, schema-projection policy, and runtime effects form one graph
-  - [`SESSION_THREAD_TURN_LIFECYCLE_SLIDES.md`](SESSION_THREAD_TURN_LIFECYCLE_SLIDES.md) — slide-format model of session-tree identity, live threads, turns, items, settings, and persistence
-  - [`FORK_PAGINATION_AND_AGENT_TOPOLOGY_SLIDES.md`](FORK_PAGINATION_AND_AGENT_TOPOLOGY_SLIDES.md) — slide-format model of fork lineage, pagination, root/subagent control, and residency
-  - [`LOCAL_STORAGE_AND_ROLLOUT_LAYOUT.md`](LOCAL_STORAGE_AND_ROLLOUT_LAYOUT.md) — concrete `CODEX_HOME`/SQLite layout, `session_id`/`thread_id`/`rollout_id` identity, lifecycle cutovers, and sidecars
-  - [`DESKTOP_ARCHITECTURE.md`](DESKTOP_ARCHITECTURE.md) — Desktop process topology and bridge ownership
-  - [`CODE_MODE_TOOL_ARCHITECTURE.md`](CODE_MODE_TOOL_ARCHITECTURE.md) — tool exposure and Code Mode ownership
-  - [`CHATGPT_HOSTED_SERVICES_ARCHITECTURE.md`](CHATGPT_HOSTED_SERVICES_ARCHITECTURE.md) — ChatGPT-hosted service planes and their boundaries
-  - [`PROMPT_ASSEMBLY_AND_CONFIG.md`](PROMPT_ASSEMBLY_AND_CONFIG.md) — prompt assembly/composition call graph, world-state grouping and deltas, Responses/Lite request shape, config-layer merge semantics, and Desktop MCP filtering boundaries
-  - [`NOTES.md`](NOTES.md) — maintenance notes
+- Current machine contract: **`codex-system-contract/v1`**
 
-The architecture notes explain design, evidence ownership, and boundaries. They
-intentionally do not copy the current setting or API-field catalog. Use generated
-JSON for exact keys, types, defaults, constraints, source identity, and effect
-links.
+The repository name and product scope are broader than the historical Python
+package name `codex-wire-audit`. Package/import/CLI renaming is intentionally a
+separate migration from semantic ownership; compatibility aliases are not added
+implicitly.
 
-The repository uses more than one deliberate source pin:
+## Core rule
 
-- the generator's reviewed integration baseline is the commit shown above;
-- public-source architecture notes identify their own reviewed Codex commit;
-- Desktop notes can also contain explicitly labeled shipped-bundle or observed
-  behavior that public Codex source cannot prove.
+```text
+exact Codex source / bounded evidence
+              ↓
+      domain-owned extractor
+              ↓
+   one versioned system contract
+              ↓
+ domain compatibility classification
+              ↓
+       release/evolution
+```
 
-Do not silently substitute one of those evidence classes for another.
+A claimed fact must have provenance. Missing evidence remains missing; prose,
+fallbacks, old adapters, and runtime observations cannot silently impersonate a
+stronger evidence class.
+
+## Layout
+
+- [`toolchain/`](toolchain/) — generator, schemas, profiles, tests, and deterministic release closure
+- [`contracts/`](contracts/) — versioned system-contract definitions
+- [`release/`](release/) — currently published v18 wheel, sdist, checksums, validation, and attestations
+- [`docs/RELEASE_EVOLUTION.md`](docs/RELEASE_EVOLUTION.md) — exact Codex commit-to-commit release authorization
+- [`docs/MIGRATION_V2.md`](docs/MIGRATION_V2.md) — domain ownership and branch boundaries for the broader migration
+- [`ARCHITECTURE_DOCS_REVIEW.md`](ARCHITECTURE_DOCS_REVIEW.md) — evidence classes, source pins, review status, and known boundaries
+- [`toolchain/CONFIG_SURFACE_ARCHITECTURE.md`](toolchain/CONFIG_SURFACE_ARCHITECTURE.md) — generated configuration and config-to-surface graph ownership
+- [`PROMPT_ASSEMBLY_AND_CONFIG.md`](PROMPT_ASSEMBLY_AND_CONFIG.md) — prompt/world-state/config layering research
+- [`CHATGPT_HOSTED_SERVICES_ARCHITECTURE.md`](CHATGPT_HOSTED_SERVICES_ARCHITECTURE.md) — plugins, Apps, connectors, and hosted MCP planes
+- [`LOCAL_STORAGE_AND_ROLLOUT_LAYOUT.md`](LOCAL_STORAGE_AND_ROLLOUT_LAYOUT.md) — `CODEX_HOME`, SQLite, rollout and storage semantics
+- [`DESKTOP_ARCHITECTURE.md`](DESKTOP_ARCHITECTURE.md) — Desktop process/bridge ownership and observation boundaries
+- [`CODE_MODE_TOOL_ARCHITECTURE.md`](CODE_MODE_TOOL_ARCHITECTURE.md) — tool exposure and Code Mode ownership
+- [`SESSION_THREAD_TURN_LIFECYCLE_SLIDES.md`](SESSION_THREAD_TURN_LIFECYCLE_SLIDES.md) — session/thread/turn lifecycle model
+- [`FORK_PAGINATION_AND_AGENT_TOPOLOGY_SLIDES.md`](FORK_PAGINATION_AND_AGENT_TOPOLOGY_SLIDES.md) — lineage, pagination, subagent control, and residency
+
+The architecture notes intentionally do not copy rapidly changing setting or API
+catalogs. Use generated machine artifacts for exact names, types, defaults,
+constraints, source identity, and graph links.
+
+## Domain-owned migration
+
+Migration toward the next contract keeps branch and semantic ownership aligned:
+
+```text
+<domain-path>/<type>/<description>
+```
+
+Examples:
+
+```text
+release/evolution/feat/exact-codex
+contract/prompt/feat/context-instructions
+contract/policy/feat/execution-authority
+contract/plugin/feat/runtime-capabilities
+contract/environment/feat/execution-context
+contract/routing/feat/proxy-network
+```
+
+The complete prefix before the final two segments is one domain. Slash spelling
+never creates Git ancestry. See [`docs/MIGRATION_V2.md`](docs/MIGRATION_V2.md).
 
 ## Install for development
 
@@ -45,18 +86,19 @@ python -m pip install --constraint toolchain/ci/constraints.txt \
   -e './toolchain[test]'
 ```
 
-## Generate the full report
+## Generate the system report
 
 ```bash
 codex-wire-audit --json \
   --repo-root /path/to/codex \
   --coverage-profile hybrid_v19 \
   --output report.json \
+  --emit-system-contract system-contract.json \
   --emit-config-schema config-schema.json \
   --emit-surface-graph config-surface-graph.json
 ```
 
-Run the focused config/schema integration against a checkout with:
+Run the focused config/schema integration with:
 
 ```bash
 python toolchain/tools/check_config_surface.py \
@@ -66,44 +108,64 @@ python toolchain/tools/check_config_surface.py \
   --graph-output config-surface-graph.json
 ```
 
-## Machine-readable outputs
+## Machine-readable authority
 
 - `report.json` contains diagnostics plus one canonical `system_contract`.
 - Local-storage facts live at `report.system_contract.model.extractors["extractor.local_storage"].data`.
 - Configuration facts and their graph live at `report.system_contract.model.extractors["extractor.config_effects"].data`.
-- Standalone config/schema files are explicit CLI exports, not alternate report paths.
-- upstream app-server protocol JSON schemas remain the field-level authority for
-  session, thread, turn, item, fork, and pagination RPC shapes.
+- Standalone config/schema files are explicit exports, not alternate report authorities.
+- Upstream app-server protocol JSON schemas remain field-level authority for session, thread, turn, item, fork, and pagination RPC shape until their native system-contract domain is complete.
 
-Human documentation may lag upstream changes. A successful pinned generation
-must not: CI validates the package, generated schema, graph references, local
-storage semantics, and the reviewed Codex revision, while a scheduled
-current-main run remains a separate drift canary.
+The current v1 contract remains explicitly hybrid. Repository/product renaming
+does not claim that prompt, plugin, policy, environment, routing, MCP, Responses,
+app-server, and runtime-conformance domains have all been canonicalized.
+
+## Exact Codex evolution releases
+
+New release decisions must be based on an exact Codex commit interval, not on a
+generator edit alone.
+
+```bash
+python toolchain/tools/codex_evolution_release.py plan \
+  --from-codex-root /work/codex-before \
+  --to-codex-root /work/codex-after \
+  --previous-version 12.0.0 \
+  --plan-output release-plan.json
+```
+
+The planner rejects dirty/shallow evidence, proves ancestry, generates both
+contracts with the same generator/profile, computes semantic evolution, and
+produces an integrity-bound SemVer recommendation. The same exact evidence can
+then authorize the existing deterministic closure builder:
+
+```bash
+python toolchain/tools/codex_evolution_release.py release \
+  --from-codex-root /work/codex-before \
+  --to-codex-root /work/codex-after \
+  --previous-version 12.0.0 \
+  --plan-output release-plan.json \
+  --output-dir release_next
+```
+
+Publication is allowed only when the package release spec names the same exact
+Codex target commit and the same evolution-derived package version. See
+[`docs/RELEASE_EVOLUTION.md`](docs/RELEASE_EVOLUTION.md).
+
+`toolchain/tools/release_pipeline.py` remains the low-level deterministic build,
+verification, assembly, and atomic publication engine. It does not own semantic
+release authorization.
 
 ## Published artifacts versus source
 
 The source tree and package metadata are v19 / 12.0.0. The checked-in
-[`release/`](release/) directory has not yet been promoted to v19 and still
-contains the verified v18 / 11.0.0 artifacts. Do not treat that directory as a
-12.0.0 installation source until a v19 release build is generated, verified,
-and committed.
-
-## Release pipeline
-
-```bash
-python toolchain/tools/release_pipeline.py release --output-dir release_v19
-python toolchain/tools/release_pipeline.py verify --release-dir release_v19
-```
-
-See [`toolchain/README_CODEX_WIRE_AUDIT_V19.md`](toolchain/README_CODEX_WIRE_AUDIT_V19.md)
-for the operational and proof boundaries.
+[`release/`](release/) directory is still the verified v18 / 11.0.0 release.
+Do not treat source migration or passing CI as publication.
 
 ## Canonical migrated semantics
 
-The generated `codex-system-contract/v1` model owns migrated extractor facts;
-legacy configuration/storage views are deterministic projections. This is an
-explicitly **hybrid** contract, not a claim that all Codex subsystems or runtime
-behavior have been proved. See the [contract guide](contracts/codex-system-contract/v1/README.md)
-and [baseline review](CANONICAL_REVIEW.md). Source, schema, coverage, exact-byte
+The generated `codex-system-contract/v1` model owns migrated extractor facts.
+The API deliberately avoids duplicate configuration/storage representations.
+See the [contract guide](contracts/codex-system-contract/v1/README.md) and
+[baseline review](CANONICAL_REVIEW.md). Source, schema, coverage, exact-byte
 pinned integration, and release closure are checked by the root-level read-only
 `canonical-proof` workflow.
