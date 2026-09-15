@@ -32,6 +32,14 @@ jobs:
 
           registry = Path('codex_wire_audit/source_registry.py')
           text = registry.read_text()
+
+          legacy_marker = '''            if group == SourceGroup.EXTRA and key == "config_toml":\n                roles.append("local_storage_configuration")\n                extractors = tuple(sorted(set((*extractors, "extractor.local_storage"))))\n            specs.append(\n'''
+          legacy_replacement = '''            if group == SourceGroup.EXTRA and key == "config_toml":\n                roles.append("local_storage_configuration")\n                extractors = tuple(sorted(set((*extractors, "extractor.local_storage"))))\n            if group == SourceGroup.EXTRA and key in {"mcp_catalog", "mcp_runtime", "mcp_handler"}:\n                roles.append("mcp_projection")\n                expected_symbols = {\n                    "mcp_catalog": ("McpServerSource", "McpCatalogBuilder", "ResolvedMcpCatalog"),\n                    "mcp_runtime": ("McpConfig", "effective_mcp_servers", "ToolPluginProvenance"),\n                    "mcp_handler": ("McpHandler", "prepare_mcp_call", "handle_mcp_tool_call"),\n                }[key]\n                extractors = tuple(sorted(set((*extractors, "extractor.mcp_projection"))))\n            specs.append(\n'''
+          if 'key in {"mcp_catalog", "mcp_runtime", "mcp_handler"}' not in text:
+              if legacy_marker not in text:
+                  raise SystemExit('legacy MCP ownership marker missing')
+              text = text.replace(legacy_marker, legacy_replacement, 1)
+
           insert_before = '''    specs.append(SourceSpec(\n        id="source_spec.extra.generated_config_schema",'''
           mcp_block = '''    mcp_specs = (\n        ("source_spec.extra.mcp_catalog", "mcp_catalog", "codex-rs/codex-mcp/src/catalog.rs", ("McpServerSource", "McpCatalogBuilder", "ResolvedMcpCatalog")),\n        ("source_spec.extra.mcp_runtime", "mcp_runtime", "codex-rs/codex-mcp/src/mcp/mod.rs", ("McpConfig", "effective_mcp_servers", "ToolPluginProvenance")),\n        ("source_spec.extra.mcp_tools", "mcp_tools", "codex-rs/codex-mcp/src/tools.rs", ("ToolInfo", "ToolFilter", "normalize_tools_for_model_with_prefix")),\n        ("source_spec.extra.mcp_tool_exposure", "mcp_tool_exposure", "codex-rs/core/src/mcp_tool_exposure.rs", ("McpHandlerCache", "append_mcp_tools", "tool_is_model_visible")),\n        ("source_spec.extra.mcp_tool_plan", "mcp_tool_plan", "codex-rs/core/src/tools/spec_plan.rs", ("build_tool_router", "apply_mcp_tool_exposure_policy", "omit_tools_from")),\n        ("source_spec.extra.mcp_handler", "mcp_handler", "codex-rs/core/src/tools/handlers/mcp.rs", ("McpHandler", "prepare_mcp_call", "handle_mcp_tool_call")),\n    )\n'''
           if 'mcp_specs = (' not in text:
@@ -40,7 +48,7 @@ jobs:
               text = text.replace(insert_before, mcp_block + insert_before, 1)
           append_marker = '''    _append_optional_specs(\n        specs,\n        routing_specs,\n        role="routing_transport",\n        extractor_id="extractor.routing_transport",\n    )\n    return SourceRegistry(specs)'''
           append_replacement = '''    _append_optional_specs(\n        specs,\n        routing_specs,\n        role="routing_transport",\n        extractor_id="extractor.routing_transport",\n    )\n    _append_optional_specs(\n        specs,\n        mcp_specs,\n        role="mcp_projection",\n        extractor_id="extractor.mcp_projection",\n    )\n    return SourceRegistry(specs)'''
-          if 'role="mcp_projection"' not in text:
+          if 'role="mcp_projection"' not in text.split('mcp_specs = (', 1)[-1]:
               if append_marker not in text:
                   raise SystemExit('source registry append marker missing')
               text = text.replace(append_marker, append_replacement, 1)
@@ -67,7 +75,6 @@ jobs:
               'execution-environment context, routing/proxy transport, and MCP tool projection; remaining protocol '
               'families may still use the frozen legacy adapter.'
           )
-          # mcp_only and codex_wire_full already declare extractor.mcp_projection; preserve them.
           profiles_path.write_text(json.dumps(doc, indent=2) + '\n')
 
           release_path = Path('codex_wire_audit/release_spec.v1.json')
