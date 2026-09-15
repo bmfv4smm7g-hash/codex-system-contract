@@ -1,10 +1,10 @@
 {
   "active_implementation": {
-    "function_count": 519,
+    "function_count": 532,
     "functions_over_200_lines": [],
     "functions_over_complexity_45": [],
     "internal_import_cycles": [],
-    "internal_import_edge_count": 177,
+    "internal_import_edge_count": 178,
     "largest_function": {
       "cyclomatic_complexity": 39,
       "file": "codex_wire_audit/proof_gate.py",
@@ -203,7 +203,7 @@
       }
     ],
     "maximum_module_fan_out": 10,
-    "module_count": 69,
+    "module_count": 70,
     "modules_over_600_lines": [],
     "modules_over_fan_out_10": [],
     "most_complex_function": {
@@ -213,15 +213,15 @@
       "qualified_name": "verify_git_source",
       "start_line": 75
     },
-    "physical_line_count": 14904,
-    "source_sha256": "17ff64b2114ee8945b14acbf025f9c936b8593698faef66315a8ffbe66f148dd"
+    "physical_line_count": 15232,
+    "source_sha256": "b78193cba7e159b442423823b29678537e989552dc46ba3bcbabaedf0d3969fb"
   },
   "active_package": {
-    "function_count": 384,
+    "function_count": 397,
     "functions_over_200_lines": [],
     "functions_over_complexity_45": [],
     "internal_import_cycles": [],
-    "internal_import_edge_count": 136,
+    "internal_import_edge_count": 137,
     "largest_function": {
       "cyclomatic_complexity": 39,
       "file": "codex_wire_audit/proof_gate.py",
@@ -420,7 +420,7 @@
       }
     ],
     "maximum_module_fan_out": 10,
-    "module_count": 57,
+    "module_count": 58,
     "modules_over_600_lines": [],
     "modules_over_fan_out_10": [],
     "most_complex_function": {
@@ -430,8 +430,8 @@
       "qualified_name": "verify_git_source",
       "start_line": 75
     },
-    "physical_line_count": 11557,
-    "source_sha256": "ce130cd985205f412799061c0e0d25c049806cb68008fb1fe16adad50da84046"
+    "physical_line_count": 11885,
+    "source_sha256": "39f400e817a437574b97ab26e4e1c0aea7f5d581f80fd2bfc31a1f88d0a950ba"
   },
   "active_release_tools": {
     "function_count": 135,
@@ -682,7 +682,7 @@
     "registered_optional_sources": 90,
     "registered_required_sources": 16,
     "registered_source_specs": 106,
-    "regression_test_methods": 213,
+    "regression_test_methods": 223,
     "standalone_release_schemas": 1,
     "strict_schema_templates": 17
   },
