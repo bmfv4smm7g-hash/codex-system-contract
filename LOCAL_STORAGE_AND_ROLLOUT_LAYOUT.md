@@ -106,6 +106,14 @@ It stores `rollout_path`, but it does not contain a `session_id` column in the
 pinned initial migration. The authoritative `session_id` is therefore read from
 rollout session metadata, not inferred from SQLite.
 
+### Replay versus projection authority
+
+`thread_history_1.sqlite` is a persistent acceleration projection, not canonical history. Codex writes durable rollout JSONL first, then projects only the new suffix after its stored byte/ordinal checkpoint. The projection persists across process restart and is not rebuilt from the full JSONL on every startup.
+
+Cold paginated model-context resume instead resolves the selected rollout and reverse-scans its immutable JSONL lineage. Paginated `list_turns` / `list_items` queries read the persisted SQLite projection. For paginated threads, `state_5.sqlite.threads.rollout_path` selects the current immutable rollout revision.
+
+The projector assumes already-projected JSONL bytes are immutable. External truncation behind the checkpoint fails with `durable rollout shrank before projection`; normal restart does not automatically reset/rebuild the projection.
+
 ## Lifecycle transitions
 
 ### Create

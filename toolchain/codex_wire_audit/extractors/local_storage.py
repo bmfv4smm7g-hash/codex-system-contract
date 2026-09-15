@@ -13,7 +13,7 @@ from .local_storage_sources import (
     _duration_product, _database_catalog, _integer_call,
 )
 from .local_storage_layout import (
-    build_scope, build_roots, build_identity_domains, build_rollouts, build_databases,
+    build_scope, build_roots, build_identity_domains, build_rollouts, build_read_paths, build_projection_semantics, build_databases,
 )
 from .local_storage_lifecycle import build_transitions, build_sidecars, build_invariants
 
@@ -125,6 +125,8 @@ class LocalStorageExtractor:
                 session_index_file=session_index_file,
                 sessions_dir=sessions_dir,
             ),
+            "read_paths": build_read_paths(),
+            "projection_semantics": build_projection_semantics(),
             "databases": build_databases(
                 busy_timeout_seconds=busy_timeout_seconds,
                 database_catalog=database_catalog,
@@ -159,8 +161,8 @@ class LocalStorageExtractor:
 
         data: dict[str, Any] = {
             "$schema": (
-                "https://schemas.codex-wire-audit.invalid/v19/"
-                "local-storage-semantics-v1.schema.json"
+                "https://schemas.codex-system-contract.invalid/storage/"
+                "local-storage-semantics-v2.schema.json"
             ),
             "source_revision": snapshot.revision.to_dict(),
             **semantic_payload,
@@ -190,6 +192,8 @@ class LocalStorageExtractor:
                         "session_index",
                         "paginated_fork",
                     ],
+                    "read_paths": ["rollout_resolver", "model_context", "history_read"],
+                    "projection_semantics": ["live_writer", "history_materialization", "history_read"],
                     "database_pointer": [
                         "state_sqlite",
                         "state_threads",

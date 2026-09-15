@@ -1,11 +1,11 @@
 {
   "counts": {
     "base": 16,
-    "extra": 100,
-    "optional": 126,
+    "extra": 105,
+    "optional": 131,
     "required": 16,
     "surface": 26,
-    "total": 142
+    "total": 147
   },
   "schema_version": "1.0.0",
   "sources": {
@@ -922,6 +922,26 @@
         "local_storage"
       ]
     },
+    "source_spec.extra.local_storage_history_read": {
+      "expected_symbols": [
+        "list_turns",
+        "list_items",
+        "thread_history_db"
+      ],
+      "extractor_ids": [
+        "extractor.local_storage"
+      ],
+      "group": "extra",
+      "id": "source_spec.extra.local_storage_history_read",
+      "legacy_key": "local_storage_history_read",
+      "path_candidates": [
+        "codex-rs/thread-store/src/local/thread_history/read.rs"
+      ],
+      "required": false,
+      "roles": [
+        "local_storage"
+      ]
+    },
     "source_spec.extra.local_storage_home_dir": {
       "expected_symbols": [
         "find_codex_home",
@@ -936,6 +956,66 @@
       "legacy_key": "local_storage_home_dir",
       "path_candidates": [
         "codex-rs/utils/home-dir/src/lib.rs"
+      ],
+      "required": false,
+      "roles": [
+        "local_storage"
+      ]
+    },
+    "source_spec.extra.local_storage_live_writer": {
+      "expected_symbols": [
+        "SQLite is a rebuildable view.",
+        "durable_write",
+        "materialize_to_sqlite"
+      ],
+      "extractor_ids": [
+        "extractor.local_storage"
+      ],
+      "group": "extra",
+      "id": "source_spec.extra.local_storage_live_writer",
+      "legacy_key": "local_storage_live_writer",
+      "path_candidates": [
+        "codex-rs/thread-store/src/local/live_writer.rs"
+      ],
+      "required": false,
+      "roles": [
+        "local_storage"
+      ]
+    },
+    "source_spec.extra.local_storage_local_store": {
+      "expected_symbols": [
+        "LocalThreadStore",
+        "live_recorders",
+        "ensure_live_recorder_absent"
+      ],
+      "extractor_ids": [
+        "extractor.local_storage"
+      ],
+      "group": "extra",
+      "id": "source_spec.extra.local_storage_local_store",
+      "legacy_key": "local_storage_local_store",
+      "path_candidates": [
+        "codex-rs/thread-store/src/local/mod.rs"
+      ],
+      "required": false,
+      "roles": [
+        "local_storage"
+      ]
+    },
+    "source_spec.extra.local_storage_model_context": {
+      "expected_symbols": [
+        "load_latest_model_context",
+        "ReverseJsonlScanner",
+        "resolve_rollout_lineage"
+      ],
+      "extractor_ids": [
+        "extractor.local_storage"
+      ],
+      "group": "extra",
+      "id": "source_spec.extra.local_storage_model_context",
+      "legacy_key": "local_storage_model_context",
+      "path_candidates": [
+        "codex-rs/thread-store/src/local/model_context.rs"
       ],
       "required": false,
       "roles": [
@@ -1055,6 +1135,26 @@
       "legacy_key": "local_storage_rollout_recorder",
       "path_candidates": [
         "codex-rs/rollout/src/recorder.rs"
+      ],
+      "required": false,
+      "roles": [
+        "local_storage"
+      ]
+    },
+    "source_spec.extra.local_storage_rollout_resolver": {
+      "expected_symbols": [
+        "resolve_current",
+        "LookupScope",
+        "rollout_path"
+      ],
+      "extractor_ids": [
+        "extractor.local_storage"
+      ],
+      "group": "extra",
+      "id": "source_spec.extra.local_storage_rollout_resolver",
+      "legacy_key": "local_storage_rollout_resolver",
+      "path_candidates": [
+        "codex-rs/thread-store/src/local/thread_rollout_resolver.rs"
       ],
       "required": false,
       "roles": [
