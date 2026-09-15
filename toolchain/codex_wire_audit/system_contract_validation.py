@@ -64,17 +64,15 @@ def _references(model: Mapping[str, Any]) -> None:
     for key, spec in specs.items():
         if key != spec["id"]:
             raise ValueError("source registry key/id mismatch")
-    paths: set[str] = set()
     for key, record in files.items():
         path = record["path"]
         relative_source_path(path)
-        if key != record["spec_id"] or path in paths:
-            raise ValueError("source manifest identity/path collision")
+        if key != record["spec_id"]:
+            raise ValueError("source manifest key/spec identity collision")
         candidates = specs[key]["path_candidates"]
         index = record["path_candidate_index"]
         if index >= len(candidates) or candidates[index] != path:
             raise ValueError("source path is not the selected registry candidate")
-        paths.add(path)
 
     extractors = model["extractors"]
     canonical_ids = model["migration"]["canonical_ir_extractors"]

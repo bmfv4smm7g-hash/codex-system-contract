@@ -1,6 +1,6 @@
 {
   "active_implementation": {
-    "function_count": 516,
+    "function_count": 519,
     "functions_over_200_lines": [],
     "functions_over_complexity_45": [],
     "internal_import_cycles": [],
@@ -93,13 +93,6 @@
         "start_line": 75
       },
       {
-        "cyclomatic_complexity": 40,
-        "file": "codex_wire_audit/system_contract_validation.py",
-        "line_count": 71,
-        "qualified_name": "_references",
-        "start_line": 51
-      },
-      {
         "cyclomatic_complexity": 39,
         "file": "codex_wire_audit/cli.py",
         "line_count": 109,
@@ -112,6 +105,13 @@
         "line_count": 199,
         "qualified_name": "build_attestation",
         "start_line": 132
+      },
+      {
+        "cyclomatic_complexity": 39,
+        "file": "codex_wire_audit/system_contract_validation.py",
+        "line_count": 69,
+        "qualified_name": "_references",
+        "start_line": 51
       },
       {
         "cyclomatic_complexity": 36,
@@ -213,11 +213,11 @@
       "qualified_name": "verify_git_source",
       "start_line": 75
     },
-    "physical_line_count": 14833,
-    "source_sha256": "b4af6e64011aa2d36e56cf091622bed99d5872b86b1d542f6f2b70fac92b4a55"
+    "physical_line_count": 14904,
+    "source_sha256": "17ff64b2114ee8945b14acbf025f9c936b8593698faef66315a8ffbe66f148dd"
   },
   "active_package": {
-    "function_count": 381,
+    "function_count": 384,
     "functions_over_200_lines": [],
     "functions_over_complexity_45": [],
     "internal_import_cycles": [],
@@ -310,13 +310,6 @@
         "start_line": 75
       },
       {
-        "cyclomatic_complexity": 40,
-        "file": "codex_wire_audit/system_contract_validation.py",
-        "line_count": 71,
-        "qualified_name": "_references",
-        "start_line": 51
-      },
-      {
         "cyclomatic_complexity": 39,
         "file": "codex_wire_audit/cli.py",
         "line_count": 109,
@@ -329,6 +322,13 @@
         "line_count": 199,
         "qualified_name": "build_attestation",
         "start_line": 132
+      },
+      {
+        "cyclomatic_complexity": 39,
+        "file": "codex_wire_audit/system_contract_validation.py",
+        "line_count": 69,
+        "qualified_name": "_references",
+        "start_line": 51
       },
       {
         "cyclomatic_complexity": 34,
@@ -430,8 +430,8 @@
       "qualified_name": "verify_git_source",
       "start_line": 75
     },
-    "physical_line_count": 11486,
-    "source_sha256": "8cdb890f285e2864e268e9a4fd84f4dfcf87f1dde7770f348c100a6285da32ec"
+    "physical_line_count": 11557,
+    "source_sha256": "ce130cd985205f412799061c0e0d25c049806cb68008fb1fe16adad50da84046"
   },
   "active_release_tools": {
     "function_count": 135,
@@ -682,7 +682,7 @@
     "registered_optional_sources": 90,
     "registered_required_sources": 16,
     "registered_source_specs": 106,
-    "regression_test_methods": 208,
+    "regression_test_methods": 213,
     "standalone_release_schemas": 1,
     "strict_schema_templates": 17
   },

@@ -136,6 +136,76 @@ def _annotate_qualified_schemas(report: MutableMapping[str, Any], resolver: Sche
                 rewrite_refs(field.get('wire_schema'), str(field_id))
     report['schema_identity'] = {'strategy': 'source_qualified_rust_name_with_path_hash_fallback', 'schemas': copy.deepcopy(resolver.metadata)}
 
+def _legacy_diagnostic_source_ref(report: Mapping[str, Any], source_ref: str) -> str:
+    """Project a canonical source ref into the frozen v10 manifest namespace."""
+    manifest = report.get('source_manifest')
+    if not isinstance(manifest, Mapping):
+        return source_ref
+    files = manifest.get('files') if isinstance(manifest.get('files'), Mapping) else {}
+    locations = manifest.get('locations') if isinstance(manifest.get('locations'), Mapping) else {}
+    path_index = manifest.get('path_index') if isinstance(manifest.get('path_index'), Mapping) else {}
+    if source_ref in files or source_ref in locations:
+        return source_ref
+
+    def resolve_path(path_ref: str) -> str | None:
+        source_id = path_index.get(path_ref)
+        if isinstance(source_id, str) and source_id in files:
+            return source_id
+        path, separator, line_text = path_ref.rpartition(':')
+        if not separator or not line_text.isdigit():
+            return None
+        source_id = path_index.get(path)
+        if not isinstance(source_id, str) or source_id not in files:
+            return None
+        line = int(line_text)
+        for location_id, location in locations.items():
+            if not isinstance(location, Mapping) or location.get('source_ref') != source_id:
+                continue
+            start = location.get('start_line', location.get('line'))
+            end = location.get('end_line', start)
+            if start == line and end == line:
+                return str(location_id)
+        return source_id
+
+    resolved = resolve_path(source_ref)
+    if resolved:
+        return resolved
+    exact_snapshot = manifest.get('exact_snapshot')
+    snapshot_files = exact_snapshot.get('files') if isinstance(exact_snapshot, Mapping) and isinstance(exact_snapshot.get('files'), Mapping) else {}
+    for spec_id, record in snapshot_files.items():
+        prefix = f'{spec_id}:'
+        if not source_ref.startswith(prefix):
+            continue
+        if not isinstance(record, Mapping):
+            return source_ref
+        path_ref = source_ref[len(prefix):]
+        selected_path = record.get('path')
+        line_suffix = path_ref[len(selected_path) + 1:] if isinstance(selected_path, str) and path_ref.startswith(selected_path + ':') else ''
+        if path_ref != selected_path and not line_suffix.isdigit():
+            return source_ref
+        return resolve_path(path_ref) or source_ref
+    return source_ref
+
+
+def _project_diagnostic_source_refs(report: Mapping[str, Any], item: Mapping[str, Any]) -> dict[str, Any]:
+    value = copy.deepcopy(dict(item))
+    refs = value.get('source_refs')
+    if not isinstance(refs, list):
+        return value
+    projected: list[str] = []
+    for source_ref in refs:
+        mapped = _legacy_diagnostic_source_ref(report, str(source_ref))
+        if mapped not in projected:
+            projected.append(mapped)
+    if projected != refs:
+        details = value.get('details')
+        details = dict(details) if isinstance(details, Mapping) else {}
+        details.setdefault('canonical_source_refs', list(refs))
+        value['details'] = details
+        value['source_refs'] = projected
+    return value
+
+
 def _merge_structured_diagnostics(report: MutableMapping[str, Any], diagnostics: DiagnosticCollector) -> None:
     existing = report.get('diagnostics')
     merged: dict[str, dict[str, Any]] = {}
@@ -144,6 +214,7 @@ def _merge_structured_diagnostics(report: MutableMapping[str, Any], diagnostics:
             if isinstance(item, dict) and isinstance(item.get('id'), str):
                 merged[item['id']] = item
     for item in diagnostics.to_list():
+        item = _project_diagnostic_source_refs(report, item)
         merged[item['id']] = item
     severity_order = {'error': 0, 'warning': 1, 'info': 2}
     values = sorted(merged.values(), key=lambda item: (severity_order.get(str(item.get('severity')), 3), str(item.get('code')), str(item.get('id'))))

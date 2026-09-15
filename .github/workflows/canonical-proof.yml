@@ -107,7 +107,7 @@ jobs:
           git -C "$codex" checkout -q --detach FETCH_HEAD
           test "$(git -C "$codex" rev-parse HEAD)" = "$PINNED_CODEX_SHA"
           python tools/check_config_surface.py --codex-root "$codex" --output "$proof/config-integration.json"
-          python -m codex_wire_audit --json --repo-root "$codex" --coverage-profile hybrid_v19 \
+          codex-wire-audit --json --repo-root "$codex" --coverage-profile hybrid_v19 \
             --emit-system-contract "$proof/system-contract.json" --output "$proof/report.json"
           python tools/check_canonical_contract.py --report "$proof/report.json" \
             --source-root "$codex" --output "$proof/source-byte-proof.json"

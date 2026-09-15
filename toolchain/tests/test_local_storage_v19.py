@@ -62,6 +62,15 @@ def test_local_storage_payload_validates_against_package_schema() -> None:
     errors = sorted(Draft202012Validator(schema).iter_errors(result.data), key=lambda item: list(item.absolute_path))
     assert errors == [], '\n'.join((f"/{'/'.join(map(str, error.absolute_path))}: {error.message}" for error in errors))
 
+def test_rollout_filename_marker_accepts_rustfmt_line_break() -> None:
+    source = SOURCE_TEXTS['rollout_filename'].replace(
+        'format!("rollout-{timestamp}-{}_{}.jsonl", self.thread_id, self.rollout_id)',
+        'format!(\n            "rollout-{timestamp}-{}_{}.jsonl",\n            self.thread_id, self.rollout_id\n        )',
+    )
+    result, diagnostics = _extract({'rollout_filename': source})
+    assert result.semantic_complete is True
+    assert 'LOCAL_STORAGE_SEMANTIC_MARKER_MISSING' not in {item.code for item in diagnostics.values()}
+
 def test_local_storage_semantic_drift_is_fail_visible() -> None:
     result, diagnostics = _extract({'rollout_filename': SOURCE_TEXTS['rollout_filename'].replace("ids.split_once('_').unwrap_or((ids, ids))", 'parse_ids_with_new_grammar(ids)')})
     assert result.semantic_complete is False

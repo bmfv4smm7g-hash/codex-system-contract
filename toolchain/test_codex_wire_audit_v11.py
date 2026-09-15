@@ -533,6 +533,43 @@ class SchemaIdentityTests(unittest.TestCase):
         self.assertIn("schema.rust.a.config.config", ids)
         self.assertIn("schema.rust.b.config.config", ids)
 
+    def test_same_named_enum_variants_include_parent_enum_in_schema_id(self) -> None:
+        source = {"path": "codex-rs/protocol/src/models.rs"}
+        report = {
+            "responses_protocol": {
+                "input_and_output_items": {
+                    "enums": {
+                        "ResponseInputItem": {
+                            "name": "ResponseInputItem",
+                            "variants": [
+                                {
+                                    "name": "ToolSearchOutput",
+                                    "fields": [{"name": "call_id", "rust_type": "String", "source": source}],
+                                }
+                            ],
+                        },
+                        "ResponseItem": {
+                            "name": "ResponseItem",
+                            "variants": [
+                                {
+                                    "name": "ToolSearchOutput",
+                                    "fields": [{"name": "call_id", "rust_type": "Option<String>", "source": source}],
+                                }
+                            ],
+                        },
+                    }
+                }
+            }
+        }
+        resolver = SchemaIdentityResolver.from_report(report)
+        input_pointer = "/responses_protocol/input_and_output_items/enums/ResponseInputItem/variants/0/fields"
+        output_pointer = "/responses_protocol/input_and_output_items/enums/ResponseItem/variants/0/fields"
+        input_id = resolver.schema_id("ToolSearchOutput", input_pointer)
+        output_id = resolver.schema_id("ToolSearchOutput", output_pointer)
+        self.assertEqual(input_id, "schema.rust.protocol.models.responseinputitem.toolsearchoutput")
+        self.assertEqual(output_id, "schema.rust.protocol.models.responseitem.toolsearchoutput")
+        self.assertNotEqual(input_id, output_id)
+
     def test_path_hash_fallback_is_collision_safe(self) -> None:
         first = qualified_rust_name("vendor/a.rs", "Config")
         second = qualified_rust_name("vendor/b.rs", "Config")
