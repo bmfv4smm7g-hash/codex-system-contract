@@ -14,10 +14,19 @@ from typing import Any
 from ..diagnostics import DiagnosticCollector
 from ..models import SourceFile, SourceSnapshot
 from .registry import ExtractorResult, register_extractor
+from .app_server_history_mutation import (
+    APP_SERVER_THREAD_PROCESSOR,
+    STORAGE_PAGINATED_FORK,
+    STORAGE_REVERT,
+    TUI_APP_SERVER_SESSION,
+    TUI_BACKTRACK,
+    build_history_mutation,
+    validate_history_mutation_sources,
+)
 
 EXTRACTOR_ID = "extractor.app_server_rpc"
-SCHEMA_VERSION = "1.0.0"
-SCHEMA_ID = "https://schemas.codex-system-contract.invalid/app-server/rpc-lifecycle-v1.schema.json"
+SCHEMA_VERSION = "2.0.0"
+SCHEMA_ID = "https://schemas.codex-system-contract.invalid/app-server/rpc-lifecycle-v2.schema.json"
 
 SOURCE_IDS = {
     "common": "source_spec.extra.app_server_common",
@@ -26,6 +35,11 @@ SOURCE_IDS = {
     "turn": "source_spec.extra.app_server_turn",
     "item": "source_spec.extra.app_server_item",
     "rpc": "source_spec.extra.app_server_rpc",
+    "processor": APP_SERVER_THREAD_PROCESSOR,
+    "tui_session": TUI_APP_SERVER_SESSION,
+    "tui_backtrack": TUI_BACKTRACK,
+    "storage_fork": STORAGE_PAGINATED_FORK,
+    "storage_revert": STORAGE_REVERT,
 }
 
 CORE_METHODS = {
@@ -35,6 +49,8 @@ CORE_METHODS = {
     "thread/list",
     "thread/turns/list",
     "thread/items/list",
+    "thread/fork",
+    "thread/revert",
     "turn/start",
     "turn/steer",
     "turn/interrupt",
@@ -42,6 +58,7 @@ CORE_METHODS = {
 CORE_NOTIFICATIONS = {
     "thread/started",
     "thread/status/changed",
+    "thread/reverted",
     "turn/started",
     "turn/completed",
     "item/started",
@@ -240,6 +257,12 @@ def _build_contract_body(
     turn: SourceFile,
     item: SourceFile,
     rpc: SourceFile,
+    processor: SourceFile,
+    tui_session: SourceFile,
+    tui_backtrack: SourceFile,
+    storage_fork: SourceFile,
+    storage_revert: SourceFile,
+    history_mutation: dict[str, Any],
     requests: list[dict[str, str]],
     notifications: list[dict[str, str]],
     thread_statuses: list[str],
@@ -259,6 +282,7 @@ def _build_contract_body(
                 "thread history mode and item hydration view",
                 "turn lifecycle status and steering precondition",
                 "thread/turn/item pagination request shape",
+                "fork/revert history mutation orchestration and client-visible identity semantics",
             ],
             "does_not_own": [
                 "local rollout or SQLite persistence implementation",
@@ -300,6 +324,7 @@ def _build_contract_body(
             "interrupt_fields": _struct_fields(turn.text, "TurnInterruptParams"),
             "steer_precondition": "expectedTurnId must match the currently active turn",
         },
+        "history_mutation": history_mutation,
         "pagination": {
             "thread_list": "opaque cursor + optional limit over thread summaries",
             "turn_list": "threadId + opaque cursor + optional limit; use for paginated history instead of full thread/read hydration",
@@ -313,6 +338,11 @@ def _build_contract_body(
             "turn": _evidence(turn, "TurnStatus/TurnStartParams/TurnSteerParams/TurnInterruptParams"),
             "item": _evidence(item, "ThreadItem"),
             "rpc": _evidence(rpc, "JSONRPCMessage/JSONRPCRequest/JSONRPCNotification"),
+            "processor": _evidence(processor, "thread_fork_inner/thread_revert_response/reload_paginated_thread"),
+            "tui_session": _evidence(tui_session, "fork_thread_at/ClientRequest::ThreadFork"),
+            "tui_backtrack": _evidence(tui_backtrack, "ForkSessionForPromptEdit"),
+            "storage_fork": _evidence(storage_fork, "prepare/history_base_at_boundary"),
+            "storage_revert": _evidence(storage_revert, "revert/create_replacement_recorder"),
         },
         "semantic_complete": complete,
     }
@@ -342,7 +372,12 @@ class AppServerRpcExtractor:
         turn = sources["turn"]
         item = sources["item"]
         rpc = sources["rpc"]
-        assert common and thread and thread_data and turn and item and rpc
+        processor = sources["processor"]
+        tui_session = sources["tui_session"]
+        tui_backtrack = sources["tui_backtrack"]
+        storage_fork = sources["storage_fork"]
+        storage_revert = sources["storage_revert"]
+        assert common and thread and thread_data and turn and item and rpc and processor and tui_session and tui_backtrack and storage_fork and storage_revert
 
         complete = _require(
             diagnostics,
@@ -379,6 +414,8 @@ class AppServerRpcExtractor:
                 ("APP_SERVER_THREAD_LIST_PARAMS_MISSING", "pub struct ThreadListParams"),
                 ("APP_SERVER_THREAD_TURNS_LIST_MISSING", "pub struct ThreadTurnsListParams"),
                 ("APP_SERVER_THREAD_ITEMS_LIST_MISSING", "pub struct ThreadItemsListParams"),
+                ("APP_SERVER_THREAD_FORK_PARAMS_MISSING", "pub struct ThreadForkParams"),
+                ("APP_SERVER_THREAD_REVERT_PARAMS_MISSING", "pub struct ThreadRevertParams"),
                 ("APP_SERVER_THREAD_STATUS_MISSING", "pub enum ThreadStatus"),
             ),
             entity="app_server_rpc.thread",
@@ -412,6 +449,16 @@ class AppServerRpcExtractor:
             (("APP_SERVER_THREAD_ITEM_MISSING", "pub enum ThreadItem"),),
             entity="app_server_rpc.item",
         )
+        complete &= validate_history_mutation_sources(
+            diagnostics=diagnostics,
+            extractor_id=EXTRACTOR_ID,
+            processor=processor,
+            tui_session=tui_session,
+            tui_backtrack=tui_backtrack,
+            storage_fork=storage_fork,
+            storage_revert=storage_revert,
+        )
+        history_mutation = build_history_mutation()
 
         requests = _request_dispatch(common.text)
         notifications = _notification_dispatch(common.text)
@@ -465,6 +512,12 @@ class AppServerRpcExtractor:
             turn=turn,
             item=item,
             rpc=rpc,
+            processor=processor,
+            tui_session=tui_session,
+            tui_backtrack=tui_backtrack,
+            storage_fork=storage_fork,
+            storage_revert=storage_revert,
+            history_mutation=history_mutation,
             requests=requests,
             notifications=notifications,
             thread_statuses=thread_statuses,

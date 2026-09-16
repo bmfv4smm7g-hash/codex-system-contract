@@ -56,6 +56,16 @@ client_request_definitions! {
         serialization: thread_id(params.thread_id),
         response: v2::ThreadItemsListResponse,
     },
+    ThreadFork => "thread/fork" {
+        params: v2::ThreadForkParams,
+        serialization: thread_id(params.thread_id),
+        response: v2::ThreadForkResponse,
+    },
+    ThreadRevert => "thread/revert" {
+        params: v2::ThreadRevertParams,
+        serialization: thread_id(params.thread_id),
+        response: v2::ThreadRevertResponse,
+    },
     TurnStart => "turn/start" {
         params: v2::TurnStartParams,
         serialization: thread_id(params.thread_id),
@@ -76,6 +86,7 @@ macro_rules! server_notification_definitions { ($($tt:tt)*) => {}; }
 server_notification_definitions! {
     ThreadStarted => "thread/started" (v2::ThreadStartedNotification),
     ThreadStatusChanged => "thread/status/changed" (v2::ThreadStatusChangedNotification),
+    ThreadReverted => "thread/reverted" (v2::ThreadRevertedNotification),
     TurnStarted => "turn/started" (v2::TurnStartedNotification),
     TurnCompleted => "turn/completed" (v2::TurnCompletedNotification),
     ItemStarted => "item/started" (v2::ItemStartedNotification),
@@ -89,6 +100,8 @@ pub struct ThreadReadParams { pub thread_id: String, pub include_turns: bool }
 pub struct ThreadListParams { pub cursor: Option<String>, pub limit: Option<usize> }
 pub struct ThreadTurnsListParams { pub thread_id: String, pub cursor: Option<String>, pub limit: Option<usize> }
 pub struct ThreadItemsListParams { pub thread_id: String, pub turn_id: Option<String>, pub cursor: Option<String>, pub limit: Option<usize> }
+pub struct ThreadForkParams { pub thread_id: String, pub last_turn_id: Option<String>, pub before_turn_id: Option<String>, pub exclude_turns: bool }
+pub struct ThreadRevertParams { pub thread_id: String, pub before_turn_id: String }
 pub enum ThreadStatus { NotLoaded, Idle, SystemError, Active { active_flags: Vec<String> } }
 '''
     thread_data = '''
@@ -122,6 +135,50 @@ pub struct TurnInterruptParams { pub thread_id: String, pub turn_id: String }
     item = '''
 pub enum ThreadItem { UserMessage { id: String }, AgentMessage { id: String } }
 '''
+    processor = '''
+async fn thread_fork_inner() {
+    let paginated_source = matches!(source_thread.history_mode, ThreadHistoryMode::Paginated);
+    self.thread_store.prepare_fork(codex_thread_store::PrepareForkParams { thread_id: source_thread_id, boundary }).await;
+    self.thread_manager.fork_prepared_thread(config, prepared_fork, thread_source, parent_trace, client_mcp_extensions, reserved_thread_id).await;
+    stage_pending_thread_metadata(self.thread_manager.as_ref(), self.thread_store.as_ref(), patch, "thread/fork").await;
+}
+async fn thread_revert_response() {
+    "thread/revert only supports paginated threads";
+    wait_for_thread_shutdown(&thread).await;
+    self.thread_manager.remove_thread(&thread_id).await;
+    // Keep thread state and subscriptions across the internal reload.
+    self.thread_store.revert_thread(codex_thread_store::RevertThreadParams { thread_id, before_turn_id, multi_agent_version }).await;
+}
+async fn reload_paginated_thread() { if resumed_thread_id != thread_id { panic!(); } }
+'''
+    tui_session = '''
+pub(crate) async fn fork_thread_at() {
+    ThreadHistorySupport::Paginated;
+    let mut params = ThreadForkParams { before_turn_id, exclude_turns, ..Default::default() };
+    ClientRequest::ThreadFork { request_id, params };
+}
+'''
+    tui_backtrack = '''
+// source-preserving branch
+// app-server cannot fork in the middle of a turn.
+AppEvent::ForkSessionForPromptEdit { thread_id, nth_user_message, prompt };
+'''
+    storage_fork = '''
+HistoryPosition;
+ForkBoundary::Latest;
+ForkBoundary::ThroughTurn(turn_id);
+ForkBoundary::BeforeTurn(turn_id);
+fn history_base_at_boundary() {}
+'''
+    storage_revert = '''
+let rollout_id = ThreadId::new();
+let params = RolloutRecorderParams::new(
+        source_meta.id,
+        source_meta.forked_from_id,
+);
+params.with_rollout_id(rollout_id);
+state_db.replace_rollout_path_if_current(thread_id, expected, replacement).await;
+'''
     rpc = '''
 //! We do not do true JSON-RPC 2.0, as we neither send nor expect the "jsonrpc": "2.0" field.
 pub enum RequestId { String(String), Integer(i64) }
@@ -138,6 +195,11 @@ pub struct JSONRPCError { pub error: String, pub id: RequestId }
         "turn": _file("source_spec.extra.app_server_turn", "app_server_turn", "codex-rs/app-server-protocol/src/protocol/v2/turn.rs", turn),
         "item": _file("source_spec.extra.app_server_item", "app_server_item", "codex-rs/app-server-protocol/src/protocol/v2/item.rs", item),
         "rpc": _file("source_spec.extra.app_server_rpc", "app_server_rpc", "codex-rs/app-server-protocol/src/rpc.rs", rpc),
+        "processor": _file("source_spec.extra.app_server_thread_processor", "app_server_thread_processor", "codex-rs/app-server/src/request_processors/thread_processor.rs", processor),
+        "tui_session": _file("source_spec.extra.app_server_tui_session", "app_server_tui_session", "codex-rs/tui/src/app_server_session.rs", tui_session),
+        "tui_backtrack": _file("source_spec.extra.local_storage_tui_backtrack", "local_storage_tui_backtrack", "codex-rs/tui/src/app_backtrack.rs", tui_backtrack),
+        "storage_fork": _file("source_spec.extra.local_storage_paginated_fork", "local_storage_paginated_fork", "codex-rs/thread-store/src/local/paginated_fork.rs", storage_fork),
+        "storage_revert": _file("source_spec.extra.local_storage_revert_thread", "local_storage_revert_thread", "codex-rs/thread-store/src/local/revert_thread.rs", storage_revert),
     }
     if omit:
         rows.pop(omit)
@@ -155,6 +217,11 @@ def test_default_registry_assigns_lifecycle_sources_to_app_server_domain():
         "source_spec.extra.app_server_turn",
         "source_spec.extra.app_server_item",
         "source_spec.extra.app_server_rpc",
+        "source_spec.extra.app_server_thread_processor",
+        "source_spec.extra.app_server_tui_session",
+        "source_spec.extra.local_storage_tui_backtrack",
+        "source_spec.extra.local_storage_paginated_fork",
+        "source_spec.extra.local_storage_revert_thread",
     }
     observed = {spec.id for spec in registry.specs if "extractor.app_server_rpc" in spec.extractor_ids}
     assert observed == expected
@@ -216,3 +283,44 @@ def test_app_server_source_identity_is_exact():
     assert registry.get("source_spec.extra.app_server_turn").primary_path == "codex-rs/app-server-protocol/src/protocol/v2/turn.rs"
     assert registry.get("source_spec.extra.app_server_item").primary_path == "codex-rs/app-server-protocol/src/protocol/v2/item.rs"
     assert registry.get("source_spec.extra.app_server_rpc").primary_path == "codex-rs/app-server-protocol/src/rpc.rs"
+
+
+def test_history_mutation_distinguishes_fork_and_revert_identity() -> None:
+    result = AppServerRpcExtractor().extract(_snapshot(), DiagnosticCollector())
+    mutation = result.data["history_mutation"]
+    assert mutation["fork"]["logical_identity"] == "new thread_id"
+    assert mutation["fork"]["paginated_source"]["preparation"].startswith("thread_store.prepare_fork")
+    assert mutation["revert"]["logical_identity"] == "preserved thread_id"
+    assert mutation["revert"]["storage_bridge"]["new_thread_row"] is False
+    assert mutation["revert"]["notification"] == "thread/reverted"
+
+
+def test_tui_prompt_edit_is_source_preserving_fork_not_revert() -> None:
+    result = AppServerRpcExtractor().extract(_snapshot(), DiagnosticCollector())
+    policy = result.data["history_mutation"]["tui_prompt_edit_policy"]
+    assert policy == {
+        "operation": "thread/fork",
+        "boundary": "beforeTurnId for the selected initial prompt's turn",
+        "source_preserving": True,
+        "steer_is_independent_branch_boundary": False,
+        "uses_thread_revert": False,
+    }
+
+
+def test_history_mutation_source_drift_fails_closed() -> None:
+    snapshot = _snapshot()
+    source = snapshot.files["source_spec.extra.app_server_thread_processor"]
+    broken = source.text.replace("wait_for_thread_shutdown(&thread).await", "skip_shutdown")
+    files = dict(snapshot.files)
+    files[source.spec_id] = _file(source.spec_id, "app_server_thread_processor", source.selected_path, broken)
+    drifted = SourceSnapshot(snapshot.revision, files)
+    diagnostics = DiagnosticCollector()
+    result = AppServerRpcExtractor().extract(drifted, diagnostics)
+    assert result.semantic_complete is False
+    assert "APP_SERVER_REVERT_SHUTDOWN_MISSING" in {item.code for item in diagnostics.values()}
+
+
+def test_history_mutation_source_identity_is_exact() -> None:
+    registry = build_registry(load_legacy_modules())
+    assert registry.get("source_spec.extra.app_server_thread_processor").primary_path == "codex-rs/app-server/src/request_processors/thread_processor.rs"
+    assert registry.get("source_spec.extra.app_server_tui_session").primary_path == "codex-rs/tui/src/app_server_session.rs"
