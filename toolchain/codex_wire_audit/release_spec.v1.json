@@ -411,7 +411,8 @@
       },
       "required_resources": [
         "extractors/app_server_rpc.py",
-        "proof_schema_templates/app-server-rpc-lifecycle-v1.schema.json",
+        "extractors/app_server_history_mutation.py",
+        "proof_schema_templates/app-server-rpc-lifecycle-v2.schema.json",
         "coverage_profiles.v3.json"
       ],
       "status": "active_package"

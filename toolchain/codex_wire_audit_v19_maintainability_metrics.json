@@ -1,10 +1,10 @@
 {
   "active_implementation": {
-    "function_count": 676,
+    "function_count": 679,
     "functions_over_200_lines": [],
     "functions_over_complexity_45": [],
     "internal_import_cycles": [],
-    "internal_import_edge_count": 207,
+    "internal_import_edge_count": 210,
     "largest_function": {
       "cyclomatic_complexity": 14,
       "file": "codex_wire_audit/extractors/local_storage.py",
@@ -28,6 +28,13 @@
         "start_line": 120
       },
       {
+        "cyclomatic_complexity": 21,
+        "file": "codex_wire_audit/extractors/app_server_rpc.py",
+        "line_count": 186,
+        "qualified_name": "AppServerRpcExtractor.extract",
+        "start_line": 359
+      },
+      {
         "cyclomatic_complexity": 16,
         "file": "codex_wire_audit/extractors/responses_protocol.py",
         "line_count": 186,
@@ -39,7 +46,7 @@
         "file": "codex_wire_audit/source_registry.py",
         "line_count": 181,
         "qualified_name": "from_legacy_maps",
-        "start_line": 299
+        "start_line": 305
       },
       {
         "cyclomatic_complexity": 19,
@@ -54,13 +61,6 @@
         "line_count": 170,
         "qualified_name": "_history_notes",
         "start_line": 116
-      },
-      {
-        "cyclomatic_complexity": 15,
-        "file": "codex_wire_audit/extractors/app_server_rpc.py",
-        "line_count": 159,
-        "qualified_name": "AppServerRpcExtractor.extract",
-        "start_line": 325
       },
       {
         "cyclomatic_complexity": 30,
@@ -170,6 +170,10 @@
         "line_count": 578
       },
       {
+        "file": "codex_wire_audit/extractors/app_server_rpc.py",
+        "line_count": 549
+      },
+      {
         "file": "codex_wire_audit/extractors/context_management.py",
         "line_count": 532
       },
@@ -186,16 +190,12 @@
         "line_count": 496
       },
       {
-        "file": "codex_wire_audit/extractors/app_server_rpc.py",
-        "line_count": 488
+        "file": "codex_wire_audit/source_registry.py",
+        "line_count": 485
       },
       {
         "file": "codex_wire_audit/proof_gate.py",
         "line_count": 480
-      },
-      {
-        "file": "codex_wire_audit/source_registry.py",
-        "line_count": 479
       },
       {
         "file": "tools/release_archives.py",
@@ -203,7 +203,7 @@
       }
     ],
     "maximum_module_fan_out": 10,
-    "module_count": 81,
+    "module_count": 82,
     "modules_over_600_lines": [],
     "modules_over_fan_out_10": [],
     "most_complex_function": {
@@ -213,15 +213,15 @@
       "qualified_name": "verify_git_source",
       "start_line": 75
     },
-    "physical_line_count": 19625,
-    "source_sha256": "bf2de6c60b2ceabb1be763230c1a1e5b04d1068894e2a03926b7611c5d67f3ee"
+    "physical_line_count": 19895,
+    "source_sha256": "88fae98a501ee6a9f071e25b22da49e302bfded788e43d291fc3997475589257"
   },
   "active_package": {
-    "function_count": 541,
+    "function_count": 544,
     "functions_over_200_lines": [],
     "functions_over_complexity_45": [],
     "internal_import_cycles": [],
-    "internal_import_edge_count": 166,
+    "internal_import_edge_count": 169,
     "largest_function": {
       "cyclomatic_complexity": 14,
       "file": "codex_wire_audit/extractors/local_storage.py",
@@ -245,6 +245,13 @@
         "start_line": 120
       },
       {
+        "cyclomatic_complexity": 21,
+        "file": "codex_wire_audit/extractors/app_server_rpc.py",
+        "line_count": 186,
+        "qualified_name": "AppServerRpcExtractor.extract",
+        "start_line": 359
+      },
+      {
         "cyclomatic_complexity": 16,
         "file": "codex_wire_audit/extractors/responses_protocol.py",
         "line_count": 186,
@@ -256,7 +263,7 @@
         "file": "codex_wire_audit/source_registry.py",
         "line_count": 181,
         "qualified_name": "from_legacy_maps",
-        "start_line": 299
+        "start_line": 305
       },
       {
         "cyclomatic_complexity": 17,
@@ -264,13 +271,6 @@
         "line_count": 170,
         "qualified_name": "_history_notes",
         "start_line": 116
-      },
-      {
-        "cyclomatic_complexity": 15,
-        "file": "codex_wire_audit/extractors/app_server_rpc.py",
-        "line_count": 159,
-        "qualified_name": "AppServerRpcExtractor.extract",
-        "start_line": 325
       },
       {
         "cyclomatic_complexity": 30,
@@ -387,6 +387,10 @@
         "line_count": 578
       },
       {
+        "file": "codex_wire_audit/extractors/app_server_rpc.py",
+        "line_count": 549
+      },
+      {
         "file": "codex_wire_audit/extractors/context_management.py",
         "line_count": 532
       },
@@ -399,16 +403,12 @@
         "line_count": 502
       },
       {
-        "file": "codex_wire_audit/extractors/app_server_rpc.py",
-        "line_count": 488
+        "file": "codex_wire_audit/source_registry.py",
+        "line_count": 485
       },
       {
         "file": "codex_wire_audit/proof_gate.py",
         "line_count": 480
-      },
-      {
-        "file": "codex_wire_audit/source_registry.py",
-        "line_count": 479
       },
       {
         "file": "codex_wire_audit/cli.py",
@@ -420,7 +420,7 @@
       }
     ],
     "maximum_module_fan_out": 10,
-    "module_count": 69,
+    "module_count": 70,
     "modules_over_600_lines": [],
     "modules_over_fan_out_10": [],
     "most_complex_function": {
@@ -430,8 +430,8 @@
       "qualified_name": "verify_git_source",
       "start_line": 75
     },
-    "physical_line_count": 16278,
-    "source_sha256": "2db04ce1e9e0927c94bab964f9f84c123d8f997b803771618471d829ae879993"
+    "physical_line_count": 16548,
+    "source_sha256": "f3234f554c699e73559040aaba0666288a89f7b03bf514b687b168646c8b4b2a"
   },
   "active_release_tools": {
     "function_count": 135,
@@ -678,13 +678,13 @@
     "metadata_history_states": 19,
     "metadata_history_transitions": 9,
     "metadata_history_versions": 10,
-    "proof_schema_templates": 22,
-    "registered_optional_sources": 136,
+    "proof_schema_templates": 23,
+    "registered_optional_sources": 139,
     "registered_required_sources": 16,
-    "registered_source_specs": 152,
-    "regression_test_methods": 295,
+    "registered_source_specs": 155,
+    "regression_test_methods": 299,
     "standalone_release_schemas": 1,
-    "strict_schema_templates": 31
+    "strict_schema_templates": 32
   },
   "metrics_schema_version": "3.0.0",
   "release": {

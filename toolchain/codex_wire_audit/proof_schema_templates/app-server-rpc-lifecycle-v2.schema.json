@@ -1,0 +1,376 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.codex-system-contract.invalid/app-server/rpc-lifecycle-v2.schema.json",
+  "title": "Codex app-server RPC lifecycle and history mutation semantics",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "schema_version",
+    "ownership",
+    "rpc_envelope",
+    "request_dispatch",
+    "notification_dispatch",
+    "thread",
+    "turn",
+    "pagination",
+    "evidence",
+    "semantic_complete",
+    "semantic_digest",
+    "history_mutation"
+  ],
+  "properties": {
+    "$schema": {
+      "const": "https://schemas.codex-system-contract.invalid/app-server/rpc-lifecycle-v2.schema.json"
+    },
+    "schema_version": {
+      "const": "2.0.0"
+    },
+    "ownership": {
+      "$ref": "#/$defs/ownership"
+    },
+    "rpc_envelope": {
+      "type": "object",
+      "minProperties": 5,
+      "additionalProperties": true
+    },
+    "request_dispatch": {
+      "type": "array",
+      "minItems": 11,
+      "items": {
+        "$ref": "#/$defs/request"
+      }
+    },
+    "notification_dispatch": {
+      "type": "array",
+      "minItems": 7,
+      "items": {
+        "$ref": "#/$defs/notification"
+      }
+    },
+    "thread": {
+      "type": "object",
+      "minProperties": 8,
+      "additionalProperties": true
+    },
+    "turn": {
+      "type": "object",
+      "minProperties": 6,
+      "additionalProperties": true
+    },
+    "pagination": {
+      "type": "object",
+      "minProperties": 4,
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "minProperties": 12,
+      "additionalProperties": {
+        "$ref": "#/$defs/evidence"
+      }
+    },
+    "semantic_complete": {
+      "type": "boolean"
+    },
+    "semantic_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "history_mutation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fork",
+        "revert",
+        "tui_prompt_edit_policy",
+        "desktop_observation_classifier"
+      ],
+      "properties": {
+        "fork": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "rpc",
+            "logical_identity",
+            "source_thread_preserved",
+            "source_relation",
+            "boundaries",
+            "paginated_source",
+            "legacy_source",
+            "notification"
+          ],
+          "properties": {
+            "rpc": {
+              "const": "thread/fork"
+            },
+            "logical_identity": {
+              "const": "new thread_id"
+            },
+            "source_thread_preserved": {
+              "const": true
+            },
+            "source_relation": {
+              "type": "string"
+            },
+            "boundaries": {
+              "type": "object"
+            },
+            "paginated_source": {
+              "type": "object"
+            },
+            "legacy_source": {
+              "type": "string"
+            },
+            "notification": {
+              "const": "thread/started"
+            }
+          }
+        },
+        "revert": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "rpc",
+            "logical_identity",
+            "supported_history_mode",
+            "boundary",
+            "local_file_changes_reverted",
+            "loaded_thread_orchestration",
+            "storage_bridge",
+            "notification"
+          ],
+          "properties": {
+            "rpc": {
+              "const": "thread/revert"
+            },
+            "logical_identity": {
+              "const": "preserved thread_id"
+            },
+            "supported_history_mode": {
+              "const": "Paginated"
+            },
+            "boundary": {
+              "type": "string"
+            },
+            "local_file_changes_reverted": {
+              "const": false
+            },
+            "loaded_thread_orchestration": {
+              "type": "array",
+              "minItems": 7,
+              "items": {
+                "type": "string"
+              }
+            },
+            "storage_bridge": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "replacement_rollout_id",
+                "logical_thread_id",
+                "replacement_identity",
+                "physical_layout_owner",
+                "state_cutover",
+                "new_thread_row"
+              ],
+              "properties": {
+                "replacement_rollout_id": {
+                  "const": "new UUID"
+                },
+                "logical_thread_id": {
+                  "const": "preserved"
+                },
+                "replacement_identity": {
+                  "const": "stable logical thread_id plus new rollout_id"
+                },
+                "physical_layout_owner": {
+                  "const": "extractor.local_storage"
+                },
+                "state_cutover": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "new_thread_row": {
+                  "const": false
+                }
+              }
+            },
+            "notification": {
+              "const": "thread/reverted"
+            }
+          }
+        },
+        "tui_prompt_edit_policy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "operation",
+            "boundary",
+            "source_preserving",
+            "steer_is_independent_branch_boundary",
+            "uses_thread_revert"
+          ],
+          "properties": {
+            "operation": {
+              "const": "thread/fork"
+            },
+            "boundary": {
+              "type": "string"
+            },
+            "source_preserving": {
+              "const": true
+            },
+            "steer_is_independent_branch_boundary": {
+              "const": false
+            },
+            "uses_thread_revert": {
+              "const": false
+            }
+          }
+        },
+        "desktop_observation_classifier": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "public_source_claim",
+            "revert_signature",
+            "fork_signature"
+          ],
+          "properties": {
+            "public_source_claim": {
+              "type": "string"
+            },
+            "revert_signature": {
+              "type": "string"
+            },
+            "fork_signature": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "ownership": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "owns",
+        "does_not_own"
+      ],
+      "properties": {
+        "owns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "does_not_own": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      }
+    },
+    "request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "variant",
+        "method",
+        "params",
+        "response",
+        "serialization"
+      ],
+      "properties": {
+        "variant": {
+          "type": "string",
+          "minLength": 1
+        },
+        "method": {
+          "type": "string",
+          "pattern": "^(thread|turn)/"
+        },
+        "params": {
+          "type": "string",
+          "minLength": 1
+        },
+        "response": {
+          "type": "string",
+          "minLength": 1
+        },
+        "serialization": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "notification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "variant",
+        "method",
+        "payload"
+      ],
+      "properties": {
+        "variant": {
+          "type": "string",
+          "minLength": 1
+        },
+        "method": {
+          "type": "string",
+          "pattern": "^(thread|turn|item)/"
+        },
+        "payload": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_spec_id",
+        "path",
+        "sha256",
+        "git_blob_sha",
+        "symbol"
+      ],
+      "properties": {
+        "source_spec_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "git_blob_sha": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "symbol": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}
