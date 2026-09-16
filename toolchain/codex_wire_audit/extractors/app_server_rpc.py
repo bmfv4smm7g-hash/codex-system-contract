@@ -18,6 +18,7 @@ from .app_server_history_mutation import (
     APP_SERVER_THREAD_PROCESSOR,
     STORAGE_PAGINATED_FORK,
     STORAGE_REVERT,
+    THREAD_MANAGER,
     TUI_APP_SERVER_SESSION,
     TUI_BACKTRACK,
     build_history_mutation,
@@ -36,6 +37,7 @@ SOURCE_IDS = {
     "item": "source_spec.extra.app_server_item",
     "rpc": "source_spec.extra.app_server_rpc",
     "processor": APP_SERVER_THREAD_PROCESSOR,
+    "thread_manager": THREAD_MANAGER,
     "tui_session": TUI_APP_SERVER_SESSION,
     "tui_backtrack": TUI_BACKTRACK,
     "storage_fork": STORAGE_PAGINATED_FORK,
@@ -258,6 +260,7 @@ def _build_contract_body(
     item: SourceFile,
     rpc: SourceFile,
     processor: SourceFile,
+    thread_manager: SourceFile,
     tui_session: SourceFile,
     tui_backtrack: SourceFile,
     storage_fork: SourceFile,
@@ -339,6 +342,7 @@ def _build_contract_body(
             "item": _evidence(item, "ThreadItem"),
             "rpc": _evidence(rpc, "JSONRPCMessage/JSONRPCRequest/JSONRPCNotification"),
             "processor": _evidence(processor, "thread_fork_inner/thread_revert_response/reload_paginated_thread"),
+            "thread_manager": _evidence(thread_manager, "fork_prepared_thread/fork_thread_with_initial_history"),
             "tui_session": _evidence(tui_session, "fork_thread_at/ClientRequest::ThreadFork"),
             "tui_backtrack": _evidence(tui_backtrack, "ForkSessionForPromptEdit"),
             "storage_fork": _evidence(storage_fork, "prepare/history_base_at_boundary"),
@@ -373,11 +377,12 @@ class AppServerRpcExtractor:
         item = sources["item"]
         rpc = sources["rpc"]
         processor = sources["processor"]
+        thread_manager = sources["thread_manager"]
         tui_session = sources["tui_session"]
         tui_backtrack = sources["tui_backtrack"]
         storage_fork = sources["storage_fork"]
         storage_revert = sources["storage_revert"]
-        assert common and thread and thread_data and turn and item and rpc and processor and tui_session and tui_backtrack and storage_fork and storage_revert
+        assert common and thread and thread_data and turn and item and rpc and processor and thread_manager and tui_session and tui_backtrack and storage_fork and storage_revert
 
         complete = _require(
             diagnostics,
@@ -416,6 +421,7 @@ class AppServerRpcExtractor:
                 ("APP_SERVER_THREAD_ITEMS_LIST_MISSING", "pub struct ThreadItemsListParams"),
                 ("APP_SERVER_THREAD_FORK_PARAMS_MISSING", "pub struct ThreadForkParams"),
                 ("APP_SERVER_THREAD_REVERT_PARAMS_MISSING", "pub struct ThreadRevertParams"),
+                ("APP_SERVER_THREAD_REVERT_FILES_BOUNDARY_MISSING", "This only changes persisted conversation history. It does not revert local file changes."),
                 ("APP_SERVER_THREAD_STATUS_MISSING", "pub enum ThreadStatus"),
             ),
             entity="app_server_rpc.thread",
@@ -453,6 +459,7 @@ class AppServerRpcExtractor:
             diagnostics=diagnostics,
             extractor_id=EXTRACTOR_ID,
             processor=processor,
+            thread_manager=thread_manager,
             tui_session=tui_session,
             tui_backtrack=tui_backtrack,
             storage_fork=storage_fork,
@@ -513,6 +520,7 @@ class AppServerRpcExtractor:
             item=item,
             rpc=rpc,
             processor=processor,
+            thread_manager=thread_manager,
             tui_session=tui_session,
             tui_backtrack=tui_backtrack,
             storage_fork=storage_fork,

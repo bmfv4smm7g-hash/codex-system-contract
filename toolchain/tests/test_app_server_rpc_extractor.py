@@ -101,6 +101,7 @@ pub struct ThreadListParams { pub cursor: Option<String>, pub limit: Option<usiz
 pub struct ThreadTurnsListParams { pub thread_id: String, pub cursor: Option<String>, pub limit: Option<usize> }
 pub struct ThreadItemsListParams { pub thread_id: String, pub turn_id: Option<String>, pub cursor: Option<String>, pub limit: Option<usize> }
 pub struct ThreadForkParams { pub thread_id: String, pub last_turn_id: Option<String>, pub before_turn_id: Option<String>, pub exclude_turns: bool }
+// This only changes persisted conversation history. It does not revert local file changes.
 pub struct ThreadRevertParams { pub thread_id: String, pub before_turn_id: String }
 pub enum ThreadStatus { NotLoaded, Idle, SystemError, Active { active_flags: Vec<String> } }
 '''
@@ -147,10 +148,24 @@ async fn thread_revert_response() {
     wait_for_thread_shutdown(&thread).await;
     self.thread_manager.remove_thread(&thread_id).await;
     // Keep thread state and subscriptions across the internal reload.
+    ServerNotification::ThreadStarted(notif);
+    ServerNotification::ThreadReverted(ThreadRevertedNotification { thread_id });
     self.thread_store.revert_thread(codex_thread_store::RevertThreadParams { thread_id, before_turn_id, multi_agent_version }).await;
 }
 async fn reload_paginated_thread() { if resumed_thread_id != thread_id { panic!(); } }
 '''
+    thread_manager = """
+/// Fork an existing thread by snapshotting rollout history. The new thread will have
+/// a fresh id.
+pub async fn fork_prepared_thread() {
+    let history = InitialHistory::Resumed(ResumedHistory {
+        conversation_id: prepared.source_thread_id,
+    });
+}
+async fn fork_thread_with_initial_history() {
+    request.forked_from_thread_id = source_thread_id;
+}
+"""
     tui_session = '''
 pub(crate) async fn fork_thread_at() {
     ThreadHistorySupport::Paginated;
@@ -196,6 +211,7 @@ pub struct JSONRPCError { pub error: String, pub id: RequestId }
         "item": _file("source_spec.extra.app_server_item", "app_server_item", "codex-rs/app-server-protocol/src/protocol/v2/item.rs", item),
         "rpc": _file("source_spec.extra.app_server_rpc", "app_server_rpc", "codex-rs/app-server-protocol/src/rpc.rs", rpc),
         "processor": _file("source_spec.extra.app_server_thread_processor", "app_server_thread_processor", "codex-rs/app-server/src/request_processors/thread_processor.rs", processor),
+        "thread_manager": _file("source_spec.extra.app_server_thread_manager", "app_server_thread_manager", "codex-rs/core/src/thread_manager.rs", thread_manager),
         "tui_session": _file("source_spec.extra.app_server_tui_session", "app_server_tui_session", "codex-rs/tui/src/app_server_session.rs", tui_session),
         "tui_backtrack": _file("source_spec.extra.local_storage_tui_backtrack", "local_storage_tui_backtrack", "codex-rs/tui/src/app_backtrack.rs", tui_backtrack),
         "storage_fork": _file("source_spec.extra.local_storage_paginated_fork", "local_storage_paginated_fork", "codex-rs/thread-store/src/local/paginated_fork.rs", storage_fork),
@@ -218,6 +234,7 @@ def test_default_registry_assigns_lifecycle_sources_to_app_server_domain():
         "source_spec.extra.app_server_item",
         "source_spec.extra.app_server_rpc",
         "source_spec.extra.app_server_thread_processor",
+        "source_spec.extra.app_server_thread_manager",
         "source_spec.extra.app_server_tui_session",
         "source_spec.extra.local_storage_tui_backtrack",
         "source_spec.extra.local_storage_paginated_fork",
@@ -292,6 +309,8 @@ def test_history_mutation_distinguishes_fork_and_revert_identity() -> None:
     assert mutation["fork"]["paginated_source"]["preparation"].startswith("thread_store.prepare_fork")
     assert mutation["revert"]["logical_identity"] == "preserved thread_id"
     assert mutation["revert"]["storage_bridge"]["new_thread_row"] is False
+    assert mutation["revert"]["storage_bridge"]["physical_layout_owner"] == "extractor.local_storage"
+    assert mutation["revert"]["storage_bridge"]["replacement_identity"] == "stable logical thread_id plus new rollout_id"
     assert mutation["revert"]["notification"] == "thread/reverted"
 
 
@@ -324,3 +343,4 @@ def test_history_mutation_source_identity_is_exact() -> None:
     registry = build_registry(load_legacy_modules())
     assert registry.get("source_spec.extra.app_server_thread_processor").primary_path == "codex-rs/app-server/src/request_processors/thread_processor.rs"
     assert registry.get("source_spec.extra.app_server_tui_session").primary_path == "codex-rs/tui/src/app_server_session.rs"
+    assert registry.get("source_spec.extra.app_server_thread_manager").primary_path == "codex-rs/core/src/thread_manager.rs"

@@ -1,11 +1,11 @@
 {
   "counts": {
     "base": 16,
-    "extra": 112,
-    "optional": 138,
+    "extra": 113,
+    "optional": 139,
     "required": 16,
     "surface": 26,
-    "total": 154
+    "total": 155
   },
   "schema_version": "1.0.0",
   "sources": {
@@ -454,13 +454,36 @@
         "app_server_rpc"
       ]
     },
+    "source_spec.extra.app_server_thread_manager": {
+      "expected_symbols": [
+        "fork_prepared_thread",
+        "fork_thread_with_initial_history",
+        "a fresh id",
+        "forked_from_thread_id"
+      ],
+      "extractor_ids": [
+        "extractor.app_server_rpc"
+      ],
+      "group": "extra",
+      "id": "source_spec.extra.app_server_thread_manager",
+      "legacy_key": "app_server_thread_manager",
+      "path_candidates": [
+        "codex-rs/core/src/thread_manager.rs"
+      ],
+      "required": false,
+      "roles": [
+        "app_server_rpc"
+      ]
+    },
     "source_spec.extra.app_server_thread_processor": {
       "expected_symbols": [
         "thread_fork_inner",
         "thread_revert_response",
         "reload_paginated_thread",
         "prepare_fork",
-        "revert_thread"
+        "revert_thread",
+        "ServerNotification::ThreadStarted",
+        "ServerNotification::ThreadReverted"
       ],
       "extractor_ids": [
         "extractor.app_server_rpc"

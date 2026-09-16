@@ -26,8 +26,8 @@
       "sha256": "cfa3b2287dffffb805c7b8f5957f505d9026d38463c084809a85d269f585f1c7"
     },
     "source-registry.default.json": {
-      "bytes": 76304,
-      "sha256": "22ceb6ac032528e1b85107af23e96f94ff85efd8db1b3fb801f8d604905f67f3"
+      "bytes": 76980,
+      "sha256": "6a03e645dadfce85c2200a967a3048fba2337980fc1b882446526767556b4af7"
     },
     "source-registry.overlay.example.json": {
       "bytes": 229,

@@ -28,6 +28,13 @@
         "start_line": 120
       },
       {
+        "cyclomatic_complexity": 21,
+        "file": "codex_wire_audit/extractors/app_server_rpc.py",
+        "line_count": 186,
+        "qualified_name": "AppServerRpcExtractor.extract",
+        "start_line": 359
+      },
+      {
         "cyclomatic_complexity": 16,
         "file": "codex_wire_audit/extractors/responses_protocol.py",
         "line_count": 186,
@@ -35,18 +42,11 @@
         "start_line": 176
       },
       {
-        "cyclomatic_complexity": 20,
-        "file": "codex_wire_audit/extractors/app_server_rpc.py",
-        "line_count": 182,
-        "qualified_name": "AppServerRpcExtractor.extract",
-        "start_line": 355
-      },
-      {
         "cyclomatic_complexity": 14,
         "file": "codex_wire_audit/source_registry.py",
         "line_count": 181,
         "qualified_name": "from_legacy_maps",
-        "start_line": 304
+        "start_line": 305
       },
       {
         "cyclomatic_complexity": 19,
@@ -171,7 +171,7 @@
       },
       {
         "file": "codex_wire_audit/extractors/app_server_rpc.py",
-        "line_count": 541
+        "line_count": 549
       },
       {
         "file": "codex_wire_audit/extractors/context_management.py",
@@ -191,7 +191,7 @@
       },
       {
         "file": "codex_wire_audit/source_registry.py",
-        "line_count": 484
+        "line_count": 485
       },
       {
         "file": "codex_wire_audit/proof_gate.py",
@@ -213,8 +213,8 @@
       "qualified_name": "verify_git_source",
       "start_line": 75
     },
-    "physical_line_count": 19869,
-    "source_sha256": "6571162aaa19945184fd013c931625a612d2f898a1d85a28200c6a8e9539f1a2"
+    "physical_line_count": 19895,
+    "source_sha256": "88fae98a501ee6a9f071e25b22da49e302bfded788e43d291fc3997475589257"
   },
   "active_package": {
     "function_count": 544,
@@ -245,6 +245,13 @@
         "start_line": 120
       },
       {
+        "cyclomatic_complexity": 21,
+        "file": "codex_wire_audit/extractors/app_server_rpc.py",
+        "line_count": 186,
+        "qualified_name": "AppServerRpcExtractor.extract",
+        "start_line": 359
+      },
+      {
         "cyclomatic_complexity": 16,
         "file": "codex_wire_audit/extractors/responses_protocol.py",
         "line_count": 186,
@@ -252,18 +259,11 @@
         "start_line": 176
       },
       {
-        "cyclomatic_complexity": 20,
-        "file": "codex_wire_audit/extractors/app_server_rpc.py",
-        "line_count": 182,
-        "qualified_name": "AppServerRpcExtractor.extract",
-        "start_line": 355
-      },
-      {
         "cyclomatic_complexity": 14,
         "file": "codex_wire_audit/source_registry.py",
         "line_count": 181,
         "qualified_name": "from_legacy_maps",
-        "start_line": 304
+        "start_line": 305
       },
       {
         "cyclomatic_complexity": 17,
@@ -388,7 +388,7 @@
       },
       {
         "file": "codex_wire_audit/extractors/app_server_rpc.py",
-        "line_count": 541
+        "line_count": 549
       },
       {
         "file": "codex_wire_audit/extractors/context_management.py",
@@ -404,7 +404,7 @@
       },
       {
         "file": "codex_wire_audit/source_registry.py",
-        "line_count": 484
+        "line_count": 485
       },
       {
         "file": "codex_wire_audit/proof_gate.py",
@@ -430,8 +430,8 @@
       "qualified_name": "verify_git_source",
       "start_line": 75
     },
-    "physical_line_count": 16522,
-    "source_sha256": "55ff703400aaaa43b2d970f8344977dff8d19efb6bb2ee2503ef6e82bc70d8de"
+    "physical_line_count": 16548,
+    "source_sha256": "f3234f554c699e73559040aaba0666288a89f7b03bf514b687b168646c8b4b2a"
   },
   "active_release_tools": {
     "function_count": 135,
@@ -679,9 +679,9 @@
     "metadata_history_transitions": 9,
     "metadata_history_versions": 10,
     "proof_schema_templates": 23,
-    "registered_optional_sources": 138,
+    "registered_optional_sources": 139,
     "registered_required_sources": 16,
-    "registered_source_specs": 154,
+    "registered_source_specs": 155,
     "regression_test_methods": 299,
     "standalone_release_schemas": 1,
     "strict_schema_templates": 32

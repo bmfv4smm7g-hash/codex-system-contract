@@ -7,6 +7,7 @@ from ..diagnostics import DiagnosticCollector
 from ..models import SourceFile
 
 APP_SERVER_THREAD_PROCESSOR = "source_spec.extra.app_server_thread_processor"
+THREAD_MANAGER = "source_spec.extra.app_server_thread_manager"
 TUI_APP_SERVER_SESSION = "source_spec.extra.app_server_tui_session"
 TUI_BACKTRACK = "source_spec.extra.local_storage_tui_backtrack"
 STORAGE_PAGINATED_FORK = "source_spec.extra.local_storage_paginated_fork"
@@ -46,6 +47,7 @@ def validate_history_mutation_sources(
     diagnostics: DiagnosticCollector,
     extractor_id: str,
     processor: SourceFile,
+    thread_manager: SourceFile,
     tui_session: SourceFile,
     tui_backtrack: SourceFile,
     storage_fork: SourceFile,
@@ -61,7 +63,7 @@ def validate_history_mutation_sources(
             ("APP_SERVER_FORK_PAGINATED_GATE_MISSING", "let paginated_source = matches!(source_thread.history_mode, ThreadHistoryMode::Paginated)"),
             ("APP_SERVER_FORK_PREPARE_MISSING", ".prepare_fork(codex_thread_store::PrepareForkParams"),
             ("APP_SERVER_FORK_PREPARED_START_MISSING", ".fork_prepared_thread("),
-            ("APP_SERVER_FORK_NEW_THREAD_ROW_MISSING", '"thread/fork"'),
+            ("APP_SERVER_FORK_STARTED_NOTIFICATION_MISSING", "ServerNotification::ThreadStarted(notif)"),
             ("APP_SERVER_REVERT_HANDLER_MISSING", "async fn thread_revert_response"),
             ("APP_SERVER_REVERT_PAGINATED_ONLY_MISSING", '"thread/revert only supports paginated threads"'),
             ("APP_SERVER_REVERT_SHUTDOWN_MISSING", "wait_for_thread_shutdown(&thread).await"),
@@ -70,6 +72,20 @@ def validate_history_mutation_sources(
             ("APP_SERVER_REVERT_RELOAD_MISSING", "async fn reload_paginated_thread"),
             ("APP_SERVER_REVERT_IDENTITY_GUARD_MISSING", "if resumed_thread_id != thread_id"),
             ("APP_SERVER_REVERT_SUBSCRIPTION_PRESERVE_MISSING", "Keep thread state and subscriptions across the internal reload"),
+            ("APP_SERVER_REVERT_NOTIFICATION_MISSING", "ServerNotification::ThreadReverted("),
+        ),
+    )
+    complete &= _require(
+        diagnostics,
+        extractor_id=extractor_id,
+        source=thread_manager,
+        entity="app_server_rpc.history_mutation.fork_identity",
+        tokens=(
+            ("APP_SERVER_FORK_FRESH_ID_MISSING", "The new thread will have"),
+            ("APP_SERVER_FORK_FRESH_ID_SUFFIX_MISSING", "a fresh id."),
+            ("APP_SERVER_PREPARED_FORK_ENTRY_MISSING", "pub async fn fork_prepared_thread"),
+            ("APP_SERVER_PREPARED_FORK_SOURCE_ID_MISSING", "conversation_id: prepared.source_thread_id"),
+            ("APP_SERVER_FORK_RELATION_MISSING", "request.forked_from_thread_id = source_thread_id;"),
         ),
     )
     complete &= _require(
@@ -165,7 +181,8 @@ def build_history_mutation() -> dict[str, Any]:
             "storage_bridge": {
                 "replacement_rollout_id": "new UUID",
                 "logical_thread_id": "preserved",
-                "replacement_filename_semantics": "A_R: A is stable thread_id and R is replacement rollout_id",
+                "replacement_identity": "stable logical thread_id plus new rollout_id",
+                "physical_layout_owner": "extractor.local_storage",
                 "state_cutover": "compare-and-swap the existing thread row's rollout_path",
                 "new_thread_row": False,
             },
@@ -180,7 +197,7 @@ def build_history_mutation() -> dict[str, Any]:
         },
         "desktop_observation_classifier": {
             "public_source_claim": "Desktop host choice is not determined by public Codex source; classify an observation by public fork/revert signatures instead of assuming the host route",
-            "revert_signature": "same thread.id; replacement A_R rollout path; thread/reverted; existing thread row changes rollout_path",
+            "revert_signature": "same thread.id; thread/reverted; storage-selected replacement whose parsed logical thread_id remains A while rollout_id changes",
             "fork_signature": "new thread.id B; forked_from_id=A; thread/started; source A remains independently addressable",
         },
     }
