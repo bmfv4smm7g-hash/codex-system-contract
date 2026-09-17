@@ -2,8 +2,9 @@
 
 This extractor intentionally owns concrete, revision-sensitive behavior that is
 not suitable for architecture prose: error classification paths, retry control,
-and fork persistence/presentation modes.  It only consumes source files already
-registered by the Responses and app-server domains.
+and fork persistence/presentation modes. It consumes exact source snapshots and
+emits observations; absence remains explicit rather than becoming a fallback
+fact.
 """
 
 from __future__ import annotations
@@ -19,28 +20,36 @@ from .registry import ExtractorResult, register_extractor
 
 
 EXTRACTOR_ID = "extractor.runtime_behavior"
-SCHEMA_VERSION = "1.0.0"
+SCHEMA_VERSION = "1.1.0"
 
 SSE = "source_spec.base.response_sse"
 WS = "source_spec.base.ws"
 RESPONSES_RETRY = "source_spec.extra.responses_transport_retry"
 PROMPT_TURN = "source_spec.extra.prompt_turn"
+API_BRIDGE = "source_spec.extra.response_api_bridge"
+PROTOCOL_ERROR = "source_spec.extra.response_protocol_error"
 THREAD_PROTOCOL = "source_spec.extra.app_server_thread"
 THREAD_PROCESSOR = "source_spec.extra.app_server_thread_processor"
 THREAD_MANAGER = "source_spec.extra.app_server_thread_manager"
 TUI_SESSION = "source_spec.extra.app_server_tui_session"
 TUI_BACKTRACK = "source_spec.extra.local_storage_tui_backtrack"
+TUI_SIDE = "source_spec.extra.tui_side"
+TUI_SLASH = "source_spec.extra.tui_slash_command"
 
 SOURCE_IDS = (
     SSE,
     WS,
     RESPONSES_RETRY,
     PROMPT_TURN,
+    API_BRIDGE,
+    PROTOCOL_ERROR,
     THREAD_PROTOCOL,
     THREAD_PROCESSOR,
     THREAD_MANAGER,
     TUI_SESSION,
     TUI_BACKTRACK,
+    TUI_SIDE,
+    TUI_SLASH,
 )
 
 
@@ -76,8 +85,8 @@ def _rule(
     }
 
 
-def _balanced_struct_body(text: str, name: str) -> str | None:
-    match = re.search(rf"pub\s+struct\s+{re.escape(name)}\b", text)
+def _balanced_body(text: str, declaration_pattern: str) -> str | None:
+    match = re.search(declaration_pattern, text)
     if not match:
         return None
     opening = text.find("{", match.end())
@@ -97,7 +106,7 @@ def _balanced_struct_body(text: str, name: str) -> str | None:
 def _struct_fields(source: SourceFile | None, name: str) -> list[str]:
     if source is None:
         return []
-    body = _balanced_struct_body(source.text, name)
+    body = _balanced_body(source.text, rf"pub\s+struct\s+{re.escape(name)}\b")
     if body is None:
         return []
     return re.findall(
@@ -106,11 +115,85 @@ def _struct_fields(source: SourceFile | None, name: str) -> list[str]:
     )
 
 
+def _codex_error_retryability(source: SourceFile | None) -> dict[str, Any]:
+    if source is None:
+        return {"observed": False, "retryable": [], "terminal": []}
+    body = _balanced_body(source.text, r"pub\s+fn\s+is_retryable\s*\(&self\)\s*->\s*bool")
+    if body is None:
+        return {"observed": False, "retryable": [], "terminal": []}
+
+    table: dict[str, bool] = {}
+    cursor = 0
+    for match in re.finditer(r"=>\s*(true|false)\s*,", body):
+        arm = body[cursor : match.start()]
+        value = match.group(1) == "true"
+        for variant in re.findall(r"CodexErrorDetails::([A-Za-z_][A-Za-z0-9_]*)", arm):
+            table[variant] = value
+        cursor = match.end()
+
+    return {
+        "observed": bool(table),
+        "retryable": sorted(name for name, retryable in table.items() if retryable),
+        "terminal": sorted(name for name, retryable in table.items() if not retryable),
+        "table": {name: table[name] for name in sorted(table)},
+        "source_semantics": "CodexErr::is_retryable match table",
+    }
+
+
+def _api_bridge_map(source: SourceFile | None) -> dict[str, Any]:
+    return {
+        "retryable_api_error": _rule(
+            source,
+            tokens=("ApiError::Retryable", "CodexErrorDetails::Stream"),
+            source_semantics="ApiError::Retryable becomes Codex Stream with optional retry delay",
+            codex_error="Stream",
+        ),
+        "rate_limit_api_error": _rule(
+            source,
+            tokens=("ApiError::RateLimitExceeded", "CodexErrorDetails::RateLimitExceeded"),
+            source_semantics="stream rate-limit classification is preserved into Codex error details",
+            codex_error="RateLimitExceeded",
+        ),
+        "server_overloaded_api_error": _rule(
+            source,
+            tokens=("ApiError::ServerOverloaded", "CodexErrorDetails::ServerOverloaded"),
+            source_semantics="capacity classification is preserved into Codex error details",
+            codex_error="ServerOverloaded",
+        ),
+        "http_503_server_overloaded": _rule(
+            source,
+            tokens=("StatusCode::SERVICE_UNAVAILABLE", "server_is_overloaded", "CodexErrorDetails::ServerOverloaded"),
+            source_semantics="HTTP-shaped transport 503 with server_is_overloaded maps to capacity error",
+            codex_error="ServerOverloaded",
+        ),
+        "http_503_slow_down": _rule(
+            source,
+            tokens=("StatusCode::SERVICE_UNAVAILABLE", "slow_down", "CodexErrorDetails::RateLimitExceeded"),
+            source_semantics="HTTP-shaped transport 503 with slow_down maps to retryable rate-limit class",
+            codex_error="RateLimitExceeded",
+        ),
+        "http_500": _rule(
+            source,
+            tokens=("StatusCode::INTERNAL_SERVER_ERROR", "CodexErrorDetails::InternalServerError"),
+            source_semantics="HTTP 500 maps to Codex internal-server-error class",
+            codex_error="InternalServerError",
+        ),
+        "http_429": _rule(
+            source,
+            tokens=("StatusCode::TOO_MANY_REQUESTS", "CodexErrorDetails::RetryLimit"),
+            source_semantics="HTTP 429 is further classified for usage/quota conditions; otherwise RetryLimit",
+            default_codex_error="RetryLimit",
+        ),
+    }
+
+
 def _responses_error_map(
     sse: SourceFile | None,
     ws: SourceFile | None,
     turn: SourceFile | None,
     retry: SourceFile | None,
+    api_bridge: SourceFile | None,
+    protocol_error: SourceFile | None,
 ) -> dict[str, Any]:
     return {
         "response_failed": {
@@ -221,6 +304,8 @@ def _responses_error_map(
                 api_error="Stream",
             ),
         },
+        "api_to_codex_error": _api_bridge_map(api_bridge),
+        "codex_error_retryability": _codex_error_retryability(protocol_error),
         "turn_retry_control": {
             "retryability_gate": _rule(
                 turn,
@@ -252,7 +337,6 @@ def _responses_error_map(
                 tokens=("retry_count > 1", "cfg!(debug_assertions)", "responses_websocket_enabled"),
                 source_semantics="release UI suppresses the first transient WebSocket reconnect notification",
             ),
-            "final_retryability_note": "This extractor derives ApiError classification and the turn-level is_retryable gate from registered sources. The concrete CodexErrorDetails retryability table lives in protocol/src/error.rs and should become a registered source before the contract claims per-variant final retryability.",
         },
     }
 
@@ -263,8 +347,20 @@ def _fork_behavior(
     thread_manager: SourceFile | None,
     tui_session: SourceFile | None,
     tui_backtrack: SourceFile | None,
+    tui_side: SourceFile | None,
+    tui_slash: SourceFile | None,
 ) -> dict[str, Any]:
     fork_fields = _struct_fields(thread_protocol, "ThreadForkParams")
+    side_surface_observed = _observed(
+        tui_side,
+        "fork_config.ephemeral = true",
+        "fork_side_thread",
+    )
+    slash_aliases_observed = _observed(
+        tui_slash,
+        "SlashCommand::Side | SlashCommand::Btw",
+        "ephemeral fork",
+    )
     return {
         "rpc": "thread/fork",
         "request_fields": fork_fields,
@@ -285,7 +381,7 @@ def _fork_behavior(
                 "ephemeral_request_flag": {
                     "observed": "ephemeral" in fork_fields,
                     "field": "ephemeral" if "ephemeral" in fork_fields else None,
-                    "source_semantics": "ThreadForkParams independently selects ephemeral versus durable fork persistence",
+                    "source_semantics": "ThreadForkParams independently supplies an ephemeral override; persistence is not encoded by fork lineage itself",
                 },
                 "ephemeral_override_applied": _rule(
                     processor,
@@ -302,38 +398,52 @@ def _fork_behavior(
                     tokens=("if ephemeral && defer_goal_continuation",),
                     source_semantics="ephemeral fork rejects deferGoalContinuation",
                 ),
-                "ephemeral_skips_durable_thread_metadata_reservation": _rule(
+                "durability_branch": _rule(
                     processor,
                     tokens=("let reserved_thread_id = if config.ephemeral", "stage_pending_thread_metadata"),
-                    source_semantics="ephemeral fork does not reserve the durable thread metadata row used by persistent forks",
+                    source_semantics="effective ephemeral threads skip the durable metadata reservation path; non-ephemeral threads use the persistent reservation path",
+                    ephemeral="no reserved durable thread metadata",
+                    non_ephemeral="stage pending durable thread metadata",
                 ),
             },
             "tui_presentation": {
                 "presentation_enum": _rule(
                     tui_session,
                     tokens=("enum ForkPresentation", "Regular", "SideConversation"),
-                    source_semantics="TUI fork presentation is a separate axis from the thread/fork RPC and its ephemeral flag",
+                    source_semantics="TUI fork presentation is a separate axis from the thread/fork ephemeral flag",
                     variants=["Regular", "SideConversation"],
                 ),
                 "side_conversation_path": _rule(
                     tui_session,
                     tokens=("pub(crate) async fn fork_side_thread", "ForkPresentation::SideConversation"),
-                    source_semantics="TUI has a dedicated side-conversation wrapper over thread/fork",
+                    source_semantics="TUI has a dedicated SideConversation presentation wrapper over thread/fork",
                 ),
                 "side_forces_paginated_exclude_turns": _rule(
                     tui_session,
                     tokens=("presentation == ForkPresentation::SideConversation", "exclude_turns"),
-                    source_semantics="side presentation forces excludeTurns in paginated-history mode",
+                    source_semantics="SideConversation presentation forces excludeTurns in paginated-history mode",
                 ),
-                "persistence_is_not_the_presentation_enum": {
+                "persistence_is_not_presentation": {
                     "observed": ("ephemeral" in fork_fields)
                     and _observed(tui_session, "enum ForkPresentation", "SideConversation"),
-                    "source_semantics": "ephemeral/durable persistence is represented by ThreadForkParams.ephemeral; Regular/SideConversation is a distinct TUI presentation choice",
+                    "source_semantics": "ephemeral/durable persistence is represented separately from Regular/SideConversation presentation",
                 },
-                "product_aliases": {
-                    "covered_by_registered_sources": False,
-                    "reason": "The registered TUI app-server-session source proves SideConversation presentation but does not own slash-command aliases. /side and /btw should only enter generated JSON after the slash-command/side module is registered as evidence.",
+            },
+            "product_surface": {
+                "side_conversation_forces_ephemeral": {
+                    "observed": side_surface_observed,
+                    "source_semantics": "TUI side-conversation setup sets fork_config.ephemeral=true before calling fork_side_thread",
                 },
+                "slash_aliases": {
+                    "observed": slash_aliases_observed,
+                    "commands": ["/side", "/btw"] if slash_aliases_observed else [],
+                    "source_semantics": "SlashCommand::Side and SlashCommand::Btw are described as starting a side conversation in an ephemeral fork",
+                },
+                "classification": (
+                    "side/btw = SideConversation presentation + ephemeral persistence override"
+                    if side_surface_observed and slash_aliases_observed
+                    else None
+                ),
             },
             "rewind_prompt_edit": {
                 "uses_fork": _rule(
@@ -356,7 +466,7 @@ class RuntimeBehaviorExtractor:
         snapshot: SourceSnapshot,
         diagnostics: DiagnosticCollector,
     ) -> ExtractorResult:
-        del diagnostics  # Missing optional evidence is represented explicitly in the data.
+        del diagnostics
         sources = {source_id: snapshot.files.get(source_id) for source_id in SOURCE_IDS}
         available = sorted(source_id for source_id, source in sources.items() if source is not None)
         missing = sorted(source_id for source_id, source in sources.items() if source is None)
@@ -365,7 +475,7 @@ class RuntimeBehaviorExtractor:
             "ownership": {
                 "owns": [
                     "revision-sensitive Responses error classification and retry control observations",
-                    "revision-sensitive thread/fork persistence and TUI presentation observations",
+                    "revision-sensitive thread/fork persistence, presentation, and product-surface observations",
                 ],
                 "does_not_own": [
                     "high-level transport design rationale",
@@ -384,6 +494,8 @@ class RuntimeBehaviorExtractor:
                 sources[WS],
                 sources[PROMPT_TURN],
                 sources[RESPONSES_RETRY],
+                sources[API_BRIDGE],
+                sources[PROTOCOL_ERROR],
             ),
             "fork": _fork_behavior(
                 sources[THREAD_PROTOCOL],
@@ -391,6 +503,8 @@ class RuntimeBehaviorExtractor:
                 sources[THREAD_MANAGER],
                 sources[TUI_SESSION],
                 sources[TUI_BACKTRACK],
+                sources[TUI_SIDE],
+                sources[TUI_SLASH],
             ),
             "evidence": {
                 source_id: _evidence(source, "runtime behavior observation")
@@ -403,7 +517,7 @@ class RuntimeBehaviorExtractor:
             extractor_id=EXTRACTOR_ID,
             schema_version=SCHEMA_VERSION,
             data=body,
-            semantic_complete=True,
+            semantic_complete=not missing,
             source_spec_ids=SOURCE_IDS,
         )
 
