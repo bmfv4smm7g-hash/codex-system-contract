@@ -465,7 +465,14 @@ class AppServerRpcExtractor:
             storage_fork=storage_fork,
             storage_revert=storage_revert,
         )
-        history_mutation = build_history_mutation()
+        history_mutation = build_history_mutation(
+            processor=processor,
+            thread_manager=thread_manager,
+            tui_session=tui_session,
+            tui_backtrack=tui_backtrack,
+            storage_fork=storage_fork,
+            storage_revert=storage_revert,
+        )
 
         requests = _request_dispatch(common.text)
         notifications = _notification_dispatch(common.text)
