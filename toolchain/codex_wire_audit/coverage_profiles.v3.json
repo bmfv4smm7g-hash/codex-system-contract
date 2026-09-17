@@ -100,7 +100,7 @@
     },
     {
       "allow_legacy_reconstruction": true,
-      "description": "Transition profile: canonical generated config schema, config-to-surface graph, turn metadata, context management, prompt/context composition, execution authority, plugin runtime capabilities, execution-environment context, routing/proxy transport and redirect/header replay, MCP tool projection, Responses request/Lite/event semantics, and app-server RPC/thread-turn lifecycle; remaining protocol families may still use the frozen legacy adapter.",
+      "description": "Transition profile: canonical generated config schema, config-to-surface graph, turn metadata, context management, prompt/context composition, execution authority, plugin runtime capabilities, execution-environment context, routing/proxy transport and redirect/header replay, MCP tool projection, Responses request/Lite/event semantics, app-server RPC/thread-turn lifecycle, and source-derived retry/fork runtime behavior; remaining protocol families may still use the frozen legacy adapter.",
       "id": "hybrid_v19",
       "required_dimensions": [
         "schema",
@@ -123,7 +123,8 @@
         "extractor.responses_lite",
         "extractor.response_events",
         "extractor.redirect_headers",
-        "extractor.app_server_rpc"
+        "extractor.app_server_rpc",
+        "extractor.runtime_behavior"
       ],
       "required_history_keys": [
         "key.turn_metadata.code_mode_tool_names",
@@ -216,7 +217,7 @@
     },
     {
       "allow_legacy_reconstruction": false,
-      "description": "Repository-wide canonical wire, local-storage, prompt-context, execution-policy, plugin-runtime, execution-environment, and routing/proxy proof. Legacy reconstruction cannot satisfy it, and historical metadata transitions and runtime conformance are part of the proof surface.",
+      "description": "Repository-wide canonical wire, local-storage, prompt-context, execution-policy, plugin-runtime, execution-environment, routing/proxy, and runtime-behavior proof. Legacy reconstruction cannot satisfy it, and historical metadata transitions and runtime conformance are part of the proof surface.",
       "id": "codex_wire_full",
       "required_dimensions": [
         "schema",
@@ -241,7 +242,8 @@
         "extractor.execution_policy",
         "extractor.plugin_runtime",
         "extractor.execution_environment",
-        "extractor.routing_transport"
+        "extractor.routing_transport",
+        "extractor.runtime_behavior"
       ],
       "required_history_keys": [
         "key.turn_metadata.code_mode_tool_names",
