@@ -46,6 +46,7 @@ stronger evidence class.
 - [`ARCHITECTURE_DOCS_REVIEW.md`](ARCHITECTURE_DOCS_REVIEW.md) — evidence classes, source pins, review status, and known boundaries
 - [`toolchain/CONFIG_SURFACE_ARCHITECTURE.md`](toolchain/CONFIG_SURFACE_ARCHITECTURE.md) — generated configuration and config-to-surface graph ownership
 - [`PROMPT_ASSEMBLY_AND_CONFIG.md`](PROMPT_ASSEMBLY_AND_CONFIG.md) — prompt/world-state/config layering research
+- [`RESPONSES_TRANSPORT_ARCHITECTURE.md`](RESPONSES_TRANSPORT_ARCHITECTURE.md) — design boundary between replayable HTTPS and the stateful WebSocket fast path
 - [`CHATGPT_HOSTED_SERVICES_ARCHITECTURE.md`](CHATGPT_HOSTED_SERVICES_ARCHITECTURE.md) — plugins, Apps, connectors, and hosted MCP planes
 - [`LOCAL_STORAGE_AND_ROLLOUT_LAYOUT.md`](LOCAL_STORAGE_AND_ROLLOUT_LAYOUT.md) — `CODEX_HOME`, SQLite, rollout and storage semantics
 - [`DESKTOP_ARCHITECTURE.md`](DESKTOP_ARCHITECTURE.md) — Desktop process/bridge ownership and observation boundaries
