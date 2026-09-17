@@ -75,6 +75,44 @@ handle_retryable_response_stream_error();
 ''',
         ),
         _file(
+            "source_spec.extra.response_api_bridge",
+            "codex-rs/codex-api/src/api_bridge.rs",
+            '''
+ApiError::Retryable => CodexErrorDetails::Stream(message).into();
+ApiError::RateLimitExceeded => CodexErrorDetails::RateLimitExceeded(message).into();
+ApiError::ServerOverloaded => CodexErrorDetails::ServerOverloaded.into();
+StatusCode::SERVICE_UNAVAILABLE;
+"server_is_overloaded"; CodexErrorDetails::ServerOverloaded;
+"slow_down"; CodexErrorDetails::RateLimitExceeded(message);
+StatusCode::INTERNAL_SERVER_ERROR; CodexErrorDetails::InternalServerError;
+StatusCode::TOO_MANY_REQUESTS; CodexErrorDetails::RetryLimit(error);
+''',
+        ),
+        _file(
+            "source_spec.extra.response_protocol_error",
+            "codex-rs/protocol/src/error.rs",
+            '''
+pub enum CodexErrorDetails {
+    Stream(String),
+    RateLimitExceeded(String),
+    ServerOverloaded,
+    InvalidRequest(String),
+    ConnectionFailed(String),
+}
+impl CodexErr {
+    pub fn is_retryable(&self) -> bool {
+        match self.details() {
+            CodexErrorDetails::ServerOverloaded
+            | CodexErrorDetails::InvalidRequest(_) => false,
+            CodexErrorDetails::Stream(..)
+            | CodexErrorDetails::RateLimitExceeded(_)
+            | CodexErrorDetails::ConnectionFailed(_) => true,
+        }
+    }
+}
+''',
+        ),
+        _file(
             "source_spec.extra.app_server_thread",
             "codex-rs/app-server-protocol/src/protocol/v2/thread.rs",
             '''
@@ -120,6 +158,23 @@ let exclude_turns = presentation == ForkPresentation::SideConversation;
             "codex-rs/tui/src/app_backtrack.rs",
             "AppEvent::ForkSessionForPromptEdit { thread_id, prompt };",
         ),
+        _file(
+            "source_spec.extra.tui_side",
+            "codex-rs/tui/src/app/side.rs",
+            '''
+fork_config.ephemeral = true;
+app_server.fork_side_thread(&self.local_settings, fork_config, parent_thread_id).await;
+''',
+        ),
+        _file(
+            "source_spec.extra.tui_slash_command",
+            "codex-rs/tui/src/slash_command.rs",
+            '''
+SlashCommand::Side | SlashCommand::Btw => {
+    "start a side conversation in an ephemeral fork"
+}
+''',
+        ),
     ]
     files = {row.spec_id: row for row in rows}
     revision = SourceRevision(
@@ -137,6 +192,7 @@ def test_runtime_behavior_derives_error_map_and_retry_control() -> None:
     result = RuntimeBehaviorExtractor().extract(_snapshot(), DiagnosticCollector())
     errors = result.data["responses"]
 
+    assert result.semantic_complete
     assert errors["response_failed"]["server_overloaded"]["observed"]
     assert errors["response_failed"]["server_overloaded"]["api_error"] == "ServerOverloaded"
     assert errors["response_failed"]["rate_limit_codes"]["error_codes"] == [
@@ -144,6 +200,9 @@ def test_runtime_behavior_derives_error_map_and_retry_control() -> None:
         "slow_down",
     ]
     assert errors["websocket_wrapped_error"]["previous_response_not_found"]["observed"]
+    assert errors["api_to_codex_error"]["server_overloaded_api_error"]["observed"]
+    assert errors["codex_error_retryability"]["table"]["ServerOverloaded"] is False
+    assert errors["codex_error_retryability"]["table"]["RateLimitExceeded"] is True
     assert errors["turn_retry_control"]["retryability_gate"]["observed"]
     assert errors["turn_retry_control"]["websocket_to_http_fallback"]["observed"]
 
@@ -155,7 +214,9 @@ def test_runtime_behavior_separates_fork_lineage_persistence_and_presentation() 
     assert "ephemeral" in fork["request_fields"]
     assert fork["axes"]["history_lineage"]["fresh_thread_identity"]["observed"]
     assert fork["axes"]["persistence"]["ephemeral_request_flag"]["observed"]
-    assert fork["axes"]["persistence"]["ephemeral_skips_durable_thread_metadata_reservation"]["observed"]
+    assert fork["axes"]["persistence"]["durability_branch"]["observed"]
     assert fork["axes"]["tui_presentation"]["presentation_enum"]["observed"]
-    assert fork["axes"]["tui_presentation"]["persistence_is_not_the_presentation_enum"]["observed"]
+    assert fork["axes"]["tui_presentation"]["persistence_is_not_presentation"]["observed"]
+    assert fork["axes"]["product_surface"]["side_conversation_forces_ephemeral"]["observed"]
+    assert fork["axes"]["product_surface"]["slash_aliases"]["commands"] == ["/side", "/btw"]
     assert fork["axes"]["rewind_prompt_edit"]["uses_fork"]["observed"]
