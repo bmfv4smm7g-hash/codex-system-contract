@@ -18,6 +18,7 @@ _BUILTIN_MODULES = (
     "mcp_projection",
     "responses_protocol",
     "app_server_rpc",
+    "runtime_behavior",
 )
 for _module_name in _BUILTIN_MODULES:
     import_module(f"{__name__}.{_module_name}")
