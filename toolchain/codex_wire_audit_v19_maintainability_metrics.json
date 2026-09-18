@@ -1,10 +1,10 @@
 {
   "active_implementation": {
-    "function_count": 709,
+    "function_count": 719,
     "functions_over_200_lines": [],
     "functions_over_complexity_45": [],
     "internal_import_cycles": [],
-    "internal_import_edge_count": 216,
+    "internal_import_edge_count": 219,
     "largest_function": {
       "cyclomatic_complexity": 36,
       "file": "codex_wire_audit/extractors/app_server_history_mutation.py",
@@ -203,7 +203,7 @@
       }
     ],
     "maximum_module_fan_out": 10,
-    "module_count": 84,
+    "module_count": 85,
     "modules_over_600_lines": [],
     "modules_over_fan_out_10": [],
     "most_complex_function": {
@@ -213,15 +213,15 @@
       "qualified_name": "verify_git_source",
       "start_line": 75
     },
-    "physical_line_count": 21045,
-    "source_sha256": "53bc1595353815c25cbe5c63f240ff377036d6d75240164edf1bed8a334f0e3b"
+    "physical_line_count": 21472,
+    "source_sha256": "eae50634f97f8f2859e8f3058e96e31cd047aeb63d38c06326b25fee8f12b22d"
   },
   "active_package": {
-    "function_count": 574,
+    "function_count": 584,
     "functions_over_200_lines": [],
     "functions_over_complexity_45": [],
     "internal_import_cycles": [],
-    "internal_import_edge_count": 175,
+    "internal_import_edge_count": 178,
     "largest_function": {
       "cyclomatic_complexity": 36,
       "file": "codex_wire_audit/extractors/app_server_history_mutation.py",
@@ -420,7 +420,7 @@
       }
     ],
     "maximum_module_fan_out": 10,
-    "module_count": 72,
+    "module_count": 73,
     "modules_over_600_lines": [],
     "modules_over_fan_out_10": [],
     "most_complex_function": {
@@ -430,8 +430,8 @@
       "qualified_name": "verify_git_source",
       "start_line": 75
     },
-    "physical_line_count": 17698,
-    "source_sha256": "54d39846627ebe2d8ff18a19a4a6227acb2f3010d3f8f19df200aa03ac4597ef"
+    "physical_line_count": 18125,
+    "source_sha256": "757b16522d48287e7d0f4cfa2daac0adeca51c7909c2ac90c89f01d020ae4740"
   },
   "active_release_tools": {
     "function_count": 135,
@@ -682,7 +682,7 @@
     "registered_optional_sources": 144,
     "registered_required_sources": 16,
     "registered_source_specs": 160,
-    "regression_test_methods": 309,
+    "regression_test_methods": 315,
     "standalone_release_schemas": 1,
     "strict_schema_templates": 33
   },
