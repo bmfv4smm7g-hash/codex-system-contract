@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from codex_wire_audit.orchestrator import _project_diagnostic_source_refs
 from test_codex_wire_audit_v10 import C
 from test_codex_wire_audit_v10 import MachineContractTests
 
@@ -63,7 +64,7 @@ def test_bare_source_spec_diagnostic_refs_project_to_manifest_sources() -> None:
         "details": {},
     }
 
-    projected = C._project_diagnostic_source_refs(report, diagnostic)
+    projected = _project_diagnostic_source_refs(report, diagnostic)
 
     assert projected["source_refs"] == ["source.models-manager"]
     assert projected["details"]["canonical_source_refs"] == [
