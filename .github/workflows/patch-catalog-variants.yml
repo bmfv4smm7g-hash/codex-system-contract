@@ -26,7 +26,9 @@ jobs:
         with:
           python-version: "3.13"
       - name: Apply source-derived catalog variant patch
-        run: python .github/scripts/apply_catalog_variant_patch.py
+        run: |
+          python .github/scripts/apply_catalog_variant_patch.py
+          python .github/scripts/modularize_catalog_patch.py
       - name: Install package and test dependencies
         working-directory: toolchain
         run: python -m pip install --constraint ci/constraints.txt -e '.[test]'
@@ -66,6 +68,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add \
+            toolchain/codex_wire_audit/extractors/responses_server_catalog.py \
             toolchain/codex_wire_audit/extractors/responses_server_response.py \
             toolchain/codex_wire_audit/proof_schema_templates/responses-server-response-semantics-v1.schema.json \
             toolchain/tests/test_responses_server_response_extractor.py \
