@@ -7,10 +7,12 @@ from typing import Any
 
 from ..diagnostics import DiagnosticCollector
 from ..models import SourceFile, SourceSnapshot
+from .responses_server_catalog import models_catalog_contract
+from .responses_server_catalog import validate_catalog_sources
 from .registry import ExtractorResult, register_extractor
 
 EXTRACTOR_ID = "extractor.responses_server_response"
-SCHEMA_VERSION = "1.1.0"
+SCHEMA_VERSION = "1.2.0"
 SCHEMA = "https://schemas.codex-system-contract.invalid/responses/responses-server-response-semantics-v1.schema.json"
 
 COMMON = "source_spec.base.common"
@@ -29,6 +31,7 @@ SOURCE_SPECS = (
     MODELS_ENDPOINT,
     MODEL_PROVIDER_MODELS,
 )
+
 
 
 def _canonical(value: object) -> bytes:
@@ -79,6 +82,7 @@ def _require(
             complete = False
             _missing(diagnostics, code=code, token=token, source=source, entity=entity)
     return complete
+
 
 
 def _brace_body(text: str, declaration: str) -> str | None:
@@ -187,66 +191,6 @@ def _validate_wire_sources(
     return complete
 
 
-def _validate_catalog_sources(
-    turn: SourceFile,
-    manager: SourceFile,
-    endpoint: SourceFile,
-    provider_models: SourceFile,
-    diagnostics: DiagnosticCollector,
-) -> bool:
-    complete = _require(
-        diagnostics,
-        turn,
-        "responses_server_response.models_catalog.dispatch",
-        (
-            ("RESPONSES_MODELS_ETAG_DISPATCH_MISSING", "ResponseEvent::ModelsEtag(etag)"),
-            ("RESPONSES_MODELS_ETAG_MANAGER_CALL_MISSING", ".refresh_if_new_etag(etag, turn_context.config.http_client_factory())"),
-        ),
-    )
-    complete &= _require(
-        diagnostics,
-        manager,
-        "responses_server_response.models_catalog.manager",
-        (
-            ("RESPONSES_MODELS_ETAG_MANAGER_IMPL_MISSING", "async fn refresh_if_new_etag"),
-            ("RESPONSES_MODELS_ETAG_COMPARE_MISSING", "current_etag.as_deref() == Some(etag.as_str())"),
-            ("RESPONSES_MODELS_ETAG_IDENTITY_COMPARE_MISSING", "Some(&identity) == self.endpoint_client.identity().as_ref()"),
-            ("RESPONSES_MODELS_ETAG_TTL_RENEW_MISSING", ".refresh_ttl(&crate::client_version_to_whole(), &identity, &etag)"),
-            ("RESPONSES_MODELS_ETAG_ONLINE_REFRESH_MISSING", ".refresh_available_models(RefreshStrategy::Online, &http_client_factory)"),
-            ("RESPONSES_MODELS_ETAG_ONLINE_FETCH_MISSING", "RefreshStrategy::Online => self.fetch_and_update_models(http_client_factory).await"),
-            ("RESPONSES_MODELS_CATALOG_FETCH_MISSING", "async fn fetch_and_update_models"),
-            ("RESPONSES_MODELS_CATALOG_ENDPOINT_CALL_MISSING", ".list_models(&client_version, http_client_factory.clone())"),
-            ("RESPONSES_MODELS_CACHE_ENTRY_MISSING", "let entry = ModelsCacheEntry {"),
-            ("RESPONSES_MODELS_CACHE_STORE_MISSING", "cache.store(&entry)"),
-            ("RESPONSES_MODELS_IN_MEMORY_APPLY_MISSING", "self.apply_remote_models(entry).await"),
-        ),
-    )
-    complete &= _require(
-        diagnostics,
-        provider_models,
-        "responses_server_response.models_catalog.provider_bridge",
-        (
-            ("RESPONSES_MODELS_PROVIDER_ENDPOINT_MISSING", 'const MODELS_ENDPOINT: &str = "/models"'),
-            ("RESPONSES_MODELS_PROVIDER_REQUEST_URL_MISSING", "ModelsClient::<ReqwestTransport>::request_url(&api_provider, client_version)"),
-            ("RESPONSES_MODELS_PROVIDER_LIST_CALL_MISSING", ".list_models(request_url, HeaderMap::new())"),
-            ("RESPONSES_MODELS_PROVIDER_RESULT_MISSING", "Ok(ModelsEndpointResponse {"),
-        ),
-    )
-    complete &= _require(
-        diagnostics,
-        endpoint,
-        "responses_server_response.models_catalog.http",
-        (
-            ("RESPONSES_MODELS_HTTP_PATH_MISSING", 'fn path() -> &\'static str {\n        "models"'),
-            ("RESPONSES_MODELS_HTTP_GET_MISSING", "provider.build_request(Method::GET, Self::path())"),
-            ("RESPONSES_MODELS_CLIENT_VERSION_QUERY_MISSING", "client_version={client_version}"),
-            ("RESPONSES_MODELS_HTTP_ETAG_MISSING", ".get(ETAG)"),
-            ("RESPONSES_MODELS_BODY_DECODE_MISSING", "let ModelsResponse { models } = serde_json::from_slice::<ModelsResponse>(&resp.body)"),
-            ("RESPONSES_MODELS_HTTP_RESULT_MISSING", "Ok((models, header_etag))"),
-        ),
-    )
-    return complete
-
 
 def _check_response_model_authority(
     sse: SourceFile, diagnostics: DiagnosticCollector
@@ -318,44 +262,6 @@ def _effective_model_contract(payload_model_consulted: bool) -> dict[str, Any]:
     }
 
 
-def _models_catalog_contract() -> dict[str, Any]:
-    return {
-        "signal": {
-            "meaning": "opaque catalog-generation/invalidation signal; it is not a model identifier and does not carry the catalog body",
-            "normalized_event": "ResponseEvent::ModelsEtag(String)",
-            "http_sse": {"location": "outer HTTP response header", "header": "X-Models-Etag"},
-            "websocket": {"location": "codex.response.metadata top-level headers", "header": "x-models-etag"},
-            "catalog_body_embedded": False,
-        },
-        "dispatch": "core turn handling forwards ModelsEtag(etag) to models_manager.refresh_if_new_etag(etag, http_client_factory)",
-        "comparison": {
-            "state": "current in-memory ModelsCacheEntry identity + etag",
-            "match_condition": "same endpoint identity and current_etag == received etag",
-            "on_match": "do not refetch /models; renew persistent cache TTL when a cache is present, then return",
-            "on_mismatch_or_identity_change": "refresh_available_models with RefreshStrategy::Online",
-        },
-        "catalog_fetch": {
-            "separate_request": True,
-            "method": "GET",
-            "path": "/models",
-            "query": "client_version=<current Codex client version>",
-            "provider_bridge": "OpenAiModelsEndpoint builds ModelsClient request_url and calls ModelsClient.list_models",
-            "response_body": "ModelsResponse JSON; Codex extracts models[]",
-            "response_version_header": "ETag",
-            "returns_to_manager": "ModelsEndpointResponse { models, etag, identity }",
-        },
-        "catalog_update": {
-            "cache_entry": "ModelsCacheEntry { fetched_at, etag, client_version, identity, models }",
-            "persistent_cache": "store entry when cache is configured",
-            "in_memory_catalog": "apply_remote_models(entry) after identity validation",
-        },
-        "wire_version_relation": {
-            "responses_signal": "X-Models-Etag / x-models-etag",
-            "models_response_version": "ETag",
-            "relationship": "the Responses signal is compared against the cached etag that originated from the /models response",
-        },
-    }
-
 
 def _server_channels_contract() -> dict[str, Any]:
     return {
@@ -386,7 +292,11 @@ def _server_channels_contract() -> dict[str, Any]:
     }
 
 
-def _build_body(sources: dict[str, SourceFile], payload_model_consulted: bool) -> dict[str, Any]:
+def _build_body(
+    sources: dict[str, SourceFile],
+    payload_model_consulted: bool,
+    catalog_variant: str,
+) -> dict[str, Any]:
     return {
         "$schema": SCHEMA,
         "schema_version": SCHEMA_VERSION,
@@ -406,7 +316,7 @@ def _build_body(sources: dict[str, SourceFile], payload_model_consulted: bool) -
         },
         "direction": "server_to_client",
         "effective_model": _effective_model_contract(payload_model_consulted),
-        "models_catalog_invalidation": _models_catalog_contract(),
+        "models_catalog_invalidation": models_catalog_contract(catalog_variant),
         "server_response_channels": _server_channels_contract(),
         "request_response_boundary": {
             "requested_model": "client request body model",
@@ -437,19 +347,23 @@ class ResponsesServerResponseExtractor:
         complete = _validate_wire_sources(
             sources[COMMON], sources[SSE], sources[WS], diagnostics
         )
-        complete &= _validate_catalog_sources(
+        catalog_complete, catalog_variant = validate_catalog_sources(
             sources[TURN],
             sources[MODELS_MANAGER],
             sources[MODELS_ENDPOINT],
             sources[MODEL_PROVIDER_MODELS],
             diagnostics,
         )
+        complete &= catalog_complete
         authority_ok, payload_model_consulted = _check_response_model_authority(
             sources[SSE], diagnostics
         )
         complete &= authority_ok
         complete &= _check_manager_body(sources[MODELS_MANAGER], diagnostics)
-        return _result(_build_body(sources, payload_model_consulted), complete)
+        return _result(
+            _build_body(sources, payload_model_consulted, catalog_variant),
+            complete,
+        )
 
 
 @register_extractor(EXTRACTOR_ID)
