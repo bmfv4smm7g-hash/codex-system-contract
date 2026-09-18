@@ -214,6 +214,87 @@ pub async fn list_models(&self) {{
     return SourceSnapshot(revision, rows)
 
 
+
+def _etag_only_snapshot() -> SourceSnapshot:
+    snapshot = _snapshot()
+    rows = dict(snapshot.files)
+    manager = """
+async fn refresh_if_new_etag(&self, etag: String, http_client_factory: HttpClientFactory) {
+    let current_etag = self.get_etag().await;
+    if current_etag.as_deref() == Some(etag.as_str()) {
+        cache.refresh_ttl(&crate::client_version_to_whole()).await;
+        return;
+    }
+    self
+        .refresh_available_models(RefreshStrategy::Online, &http_client_factory)
+        .await;
+}
+async fn refresh_available_models(
+    &self,
+    refresh_strategy: RefreshStrategy,
+    http_client_factory: &HttpClientFactory,
+) {
+    match refresh_strategy {
+        RefreshStrategy::Online => {
+            self.fetch_and_update_models(http_client_factory).await
+        }
+        _ => Ok(()),
+    }
+}
+async fn fetch_and_update_models(&self, http_client_factory: &HttpClientFactory) {
+    let client_version = crate::client_version_to_whole();
+    let (models, etag) = self
+        .endpoint_client
+        .list_models(&client_version, http_client_factory.clone())
+        .await?;
+    self.apply_remote_models(models.clone()).await;
+    let entry = ModelsCacheEntry {
+        fetched_at: Utc::now(),
+        etag,
+        client_version: Some(client_version),
+        models,
+    };
+    cache.store(&entry).await;
+}
+"""
+    provider_models = """
+const MODELS_ENDPOINT: &str = "/models";
+async fn list_models(
+    &self,
+    client_version: &str,
+) -> CoreResult<(Vec<ModelInfo>, Option<String>)> {
+    let request_url =
+        ModelsClient::<ReqwestTransport>::request_url(&api_provider, client_version);
+    client
+        .list_models(request_url, HeaderMap::new())
+        .await
+        .map_err(map_api_error)
+}
+"""
+    rows["source_spec.extra.models_manager"] = _file(
+        "source_spec.extra.models_manager",
+        "models_manager",
+        "codex-rs/models-manager/src/manager.rs",
+        manager,
+    )
+    rows["source_spec.surface.model_provider_models"] = _file(
+        "source_spec.surface.model_provider_models",
+        "model_provider_models",
+        "codex-rs/model-provider/src/models_endpoint.rs",
+        provider_models,
+        SourceGroup.SURFACE,
+    )
+    revision = SourceRevision(
+        "fixture",
+        "openai/codex",
+        "fixture-etag-only",
+        "2" * 40,
+        SourceSnapshot.digest_files(rows),
+        False,
+    )
+    return SourceSnapshot(revision, rows)
+
+
 def test_server_response_extractor_is_registered() -> None:
     assert "extractor.responses_server_response" in {extractor.extractor_id for extractor in create_extractors()}
 
@@ -241,6 +322,7 @@ def test_models_etag_is_invalidation_signal_then_separate_catalog_fetch() -> Non
     result = ResponsesServerResponseExtractor().extract(_snapshot(), DiagnosticCollector())
     contract = result.data["models_catalog_invalidation"]
 
+    assert contract["implementation_variant"] == "identity_aware"
     assert contract["signal"]["http_sse"]["header"] == "X-Models-Etag"
     assert contract["signal"]["websocket"]["header"] == "x-models-etag"
     assert contract["signal"]["catalog_body_embedded"] is False
@@ -289,6 +371,61 @@ def test_models_endpoint_etag_drift_fails_closed() -> None:
     )
     assert result.semantic_complete is False
     assert "RESPONSES_MODELS_HTTP_ETAG_MISSING" in {item.code for item in diagnostics.values()}
+
+
+
+def test_etag_only_catalog_variant_is_derived_without_identity_claims() -> None:
+    diagnostics = DiagnosticCollector()
+    result = ResponsesServerResponseExtractor().extract(
+        _etag_only_snapshot(),
+        diagnostics,
+    )
+
+    assert result.semantic_complete
+    assert diagnostics.summary()["error"] == 0
+    contract = result.data["models_catalog_invalidation"]
+    assert contract["implementation_variant"] == "etag_only"
+    assert contract["comparison"]["state"] == "current in-memory etag"
+    assert "identity" not in contract["comparison"]["match_condition"]
+    assert contract["catalog_fetch"]["returns_to_manager"] == (
+        "(Vec<ModelInfo>, Option<String>)"
+    )
+    assert "identity" not in contract["catalog_update"]["cache_entry"]
+    assert "models.clone()" in contract["catalog_update"]["in_memory_catalog"]
+
+
+def test_unknown_catalog_variant_fails_closed() -> None:
+    snapshot = _etag_only_snapshot()
+    rows = dict(snapshot.files)
+    manager = rows["source_spec.extra.models_manager"]
+    rows["source_spec.extra.models_manager"] = _file(
+        "source_spec.extra.models_manager",
+        "models_manager",
+        manager.selected_path,
+        manager.text.replace(
+            ".refresh_ttl(&crate::client_version_to_whole()).await",
+            ".touch().await",
+        ),
+    )
+    revision = SourceRevision(
+        "fixture",
+        "openai/codex",
+        "fixture-unknown-catalog",
+        "3" * 40,
+        SourceSnapshot.digest_files(rows),
+        False,
+    )
+    diagnostics = DiagnosticCollector()
+    result = ResponsesServerResponseExtractor().extract(
+        SourceSnapshot(revision, rows),
+        diagnostics,
+    )
+
+    assert result.semantic_complete is False
+    assert result.data["models_catalog_invalidation"]["implementation_variant"] == "unknown"
+    assert "RESPONSES_MODELS_CATALOG_VARIANT_UNKNOWN" in {
+        item.code for item in diagnostics.values()
+    }
 
 
 def test_server_response_schema_validates_extractor_output() -> None:

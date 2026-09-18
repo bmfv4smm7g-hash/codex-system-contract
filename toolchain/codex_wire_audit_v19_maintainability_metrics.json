@@ -1,10 +1,10 @@
 {
   "active_implementation": {
-    "function_count": 719,
+    "function_count": 722,
     "functions_over_200_lines": [],
     "functions_over_complexity_45": [],
     "internal_import_cycles": [],
-    "internal_import_edge_count": 219,
+    "internal_import_edge_count": 222,
     "largest_function": {
       "cyclomatic_complexity": 36,
       "file": "codex_wire_audit/extractors/app_server_history_mutation.py",
@@ -77,11 +77,11 @@
         "start_line": 190
       },
       {
-        "cyclomatic_complexity": 30,
-        "file": "codex_wire_audit/semantic_diff.py",
-        "line_count": 148,
-        "qualified_name": "compare",
-        "start_line": 67
+        "cyclomatic_complexity": 3,
+        "file": "codex_wire_audit/extractors/responses_server_catalog.py",
+        "line_count": 150,
+        "qualified_name": "validate_catalog_sources",
+        "start_line": 77
       }
     ],
     "largest_functions_by_complexity": [
@@ -203,7 +203,7 @@
       }
     ],
     "maximum_module_fan_out": 10,
-    "module_count": 85,
+    "module_count": 86,
     "modules_over_600_lines": [],
     "modules_over_fan_out_10": [],
     "most_complex_function": {
@@ -213,15 +213,15 @@
       "qualified_name": "verify_git_source",
       "start_line": 75
     },
-    "physical_line_count": 21479,
-    "source_sha256": "9d8d0294c67a75ac5d835b014f489d246dc72e3f006287c76d984490ced8e995"
+    "physical_line_count": 21704,
+    "source_sha256": "8e885cfc8db2aa9a9967246499307837ebc58d0e2d2bb34a88513d9c2e4a5ba9"
   },
   "active_package": {
-    "function_count": 584,
+    "function_count": 587,
     "functions_over_200_lines": [],
     "functions_over_complexity_45": [],
     "internal_import_cycles": [],
-    "internal_import_edge_count": 178,
+    "internal_import_edge_count": 181,
     "largest_function": {
       "cyclomatic_complexity": 36,
       "file": "codex_wire_audit/extractors/app_server_history_mutation.py",
@@ -287,18 +287,18 @@
         "start_line": 190
       },
       {
+        "cyclomatic_complexity": 3,
+        "file": "codex_wire_audit/extractors/responses_server_catalog.py",
+        "line_count": 150,
+        "qualified_name": "validate_catalog_sources",
+        "start_line": 77
+      },
+      {
         "cyclomatic_complexity": 30,
         "file": "codex_wire_audit/semantic_diff.py",
         "line_count": 148,
         "qualified_name": "compare",
         "start_line": 67
-      },
-      {
-        "cyclomatic_complexity": 32,
-        "file": "codex_wire_audit/sources/git.py",
-        "line_count": 145,
-        "qualified_name": "load_repo_snapshot",
-        "start_line": 22
       }
     ],
     "largest_functions_by_complexity": [
@@ -415,12 +415,12 @@
         "line_count": 480
       },
       {
-        "file": "codex_wire_audit/extractors/responses_server_response.py",
-        "line_count": 457
+        "file": "codex_wire_audit/cli.py",
+        "line_count": 449
       }
     ],
     "maximum_module_fan_out": 10,
-    "module_count": 73,
+    "module_count": 74,
     "modules_over_600_lines": [],
     "modules_over_fan_out_10": [],
     "most_complex_function": {
@@ -430,8 +430,8 @@
       "qualified_name": "verify_git_source",
       "start_line": 75
     },
-    "physical_line_count": 18132,
-    "source_sha256": "b2b41d868d5e1104dc2344d9b42d33de0a0313de3cde5e48b50cd58616fb1240"
+    "physical_line_count": 18357,
+    "source_sha256": "0b935db0c602bf2da9f0fbfafae369b363f08e79f5430b609236c604521e1158"
   },
   "active_release_tools": {
     "function_count": 135,
@@ -682,7 +682,7 @@
     "registered_optional_sources": 144,
     "registered_required_sources": 16,
     "registered_source_specs": 160,
-    "regression_test_methods": 316,
+    "regression_test_methods": 318,
     "standalone_release_schemas": 1,
     "strict_schema_templates": 33
   },
