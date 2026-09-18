@@ -20,6 +20,7 @@ _BUILTIN_MODULES = (
     "responses_server_response",
     "app_server_rpc",
     "runtime_behavior",
+    "history_identity",
 )
 for _module_name in _BUILTIN_MODULES:
     import_module(f"{__name__}.{_module_name}")
