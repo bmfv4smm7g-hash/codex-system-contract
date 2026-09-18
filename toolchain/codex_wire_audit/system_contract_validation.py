@@ -35,11 +35,6 @@ def _validator(identifier: str = SCHEMA_ID) -> Draft202012Validator:
     return Draft202012Validator(by_id[identifier], registry=registry)
 
 
-def _validation_error_detail(error: Any) -> str:
-    path = "/".join(map(str, error.absolute_path)) or "<root>"
-    return f"{path}: {error.message}"
-
-
 def _graph_references(graph: Mapping[str, Any]) -> None:
     nodes = graph["nodes"]
     if any(key != node["id"] for key, node in nodes.items()):
@@ -94,8 +89,7 @@ def _references(model: Mapping[str, Any]) -> None:
             if not entry["semantic_complete"]:
                 errors = [error for error in errors if error.validator != "required"]
             if errors:
-                detail = _validation_error_detail(errors[0])
-                raise ValueError(f"extractor fragment schema violation: {key} at {detail}")
+                raise ValueError("extractor fragment schema violation: " + key)
         if "semantic_complete" in data and data["semantic_complete"] != entry["semantic_complete"]:
             raise ValueError("extractor completeness disagreement")
         if "source_revision" in data and data["source_revision"] != model["source_revision"]:
@@ -135,7 +129,8 @@ def validate_system_contract(
     scan_secrets(value)
     errors = list(_validator().iter_errors(value))
     if errors:
-        raise ValueError("canonical schema violation at " + _validation_error_detail(errors[0]))
+        path = "/".join(map(str, errors[0].absolute_path))
+        raise ValueError("canonical schema violation at " + path)
     model = value["model"]
     _references(model)
     failures = validate_evolution_contract(model)
