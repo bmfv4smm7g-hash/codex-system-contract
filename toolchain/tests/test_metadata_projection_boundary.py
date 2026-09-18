@@ -39,3 +39,33 @@ def test_mcp_projection_keys_are_not_fixed_codex_turn_payload_fields() -> None:
     assert {"model", "codex_version", "node_repl_disabled"} <= set(
         mcp_schema["required"]
     )
+
+
+def test_bare_source_spec_diagnostic_refs_project_to_manifest_sources() -> None:
+    """Canonical source-spec IDs map into the frozen v10 manifest namespace."""
+
+    selected_path = "codex-rs/models-manager/src/manager.rs"
+    report = {
+        "source_manifest": {
+            "files": {"source.models-manager": {"path": selected_path}},
+            "locations": {},
+            "path_index": {selected_path: "source.models-manager"},
+            "exact_snapshot": {
+                "files": {
+                    "source_spec.extra.models_manager": {"path": selected_path}
+                }
+            },
+        }
+    }
+    diagnostic = {
+        "id": "diagnostic.fixture",
+        "source_refs": ["source_spec.extra.models_manager"],
+        "details": {},
+    }
+
+    projected = C._project_diagnostic_source_refs(report, diagnostic)
+
+    assert projected["source_refs"] == ["source.models-manager"]
+    assert projected["details"]["canonical_source_refs"] == [
+        "source_spec.extra.models_manager"
+    ]

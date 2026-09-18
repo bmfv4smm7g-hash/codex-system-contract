@@ -173,6 +173,13 @@ def _legacy_diagnostic_source_ref(report: Mapping[str, Any], source_ref: str) ->
     exact_snapshot = manifest.get('exact_snapshot')
     snapshot_files = exact_snapshot.get('files') if isinstance(exact_snapshot, Mapping) and isinstance(exact_snapshot.get('files'), Mapping) else {}
     for spec_id, record in snapshot_files.items():
+        if source_ref == spec_id:
+            if not isinstance(record, Mapping):
+                return source_ref
+            selected_path = record.get('path')
+            if isinstance(selected_path, str):
+                return resolve_path(selected_path) or source_ref
+            return source_ref
         prefix = f'{spec_id}:'
         if not source_ref.startswith(prefix):
             continue
