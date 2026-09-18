@@ -86,7 +86,8 @@
         "fork",
         "revert",
         "tui_prompt_edit_policy",
-        "desktop_observation_classifier"
+        "desktop_observation_classifier",
+        "source_predicates"
       ],
       "properties": {
         "fork": {
@@ -160,10 +161,12 @@
             },
             "loaded_thread_orchestration": {
               "type": "array",
-              "minItems": 7,
+              "minItems": 5,
               "items": {
                 "type": "string"
-              }
+              },
+              "maxItems": 5,
+              "uniqueItems": true
             },
             "storage_bridge": {
               "type": "object",
@@ -248,6 +251,50 @@
             },
             "fork_signature": {
               "type": "string"
+            }
+          }
+        },
+        "source_predicates": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "fork_fresh_id",
+            "fork_relation",
+            "paginated_fork",
+            "prepared_history_base",
+            "revert_paginated_only",
+            "revert_preserves_thread_id",
+            "revert_new_rollout",
+            "revert_pointer_cutover",
+            "prompt_edit_fork"
+          ],
+          "properties": {
+            "fork_fresh_id": {
+              "const": true
+            },
+            "fork_relation": {
+              "const": true
+            },
+            "paginated_fork": {
+              "const": true
+            },
+            "prepared_history_base": {
+              "const": true
+            },
+            "revert_paginated_only": {
+              "const": true
+            },
+            "revert_preserves_thread_id": {
+              "const": true
+            },
+            "revert_new_rollout": {
+              "const": true
+            },
+            "revert_pointer_cutover": {
+              "const": true
+            },
+            "prompt_edit_fork": {
+              "const": true
             }
           }
         }
