@@ -29,6 +29,20 @@ jobs:
         run: |
           sed -i 's#codex_wire_audit/proof_profile_data/proof-profiles.v3.json#codex_wire_audit/coverage_profiles.v3.json#' toolchain/tools/prepare_proof_hardening.py
           python toolchain/tools/prepare_proof_hardening.py
+          python - <<'PY'
+          from pathlib import Path
+          path = Path("toolchain/Makefile")
+          text = path.read_text(encoding="utf-8")
+          text = text.replace(
+              "self-test:\n\t$(PYTHON) -m codex_wire_audit.proof_gate --self-test\n\t$(PYTHON) -m codex_wire_audit.history_cli --self-test\n\t$(PYTHON) -m codex_wire_audit.release_contract --output /dev/null\n",
+              "self-test:\n\t$(PYTHON) -m codex_wire_audit.proof_gate --self-test\n\t$(PYTHON) -m codex_wire_audit.history_cli --self-test\n\t@set -eu; tmp=$$(mktemp); trap 'rm -f \"$$tmp\"' EXIT; \\\n\t$(PYTHON) -m codex_wire_audit.release_contract --output $$tmp\n",
+          )
+          text = text.replace(
+              "history-assets:\n\trm -rf $(HISTORY_CONTAINER)\n\t$(PYTHON) -m codex_wire_audit.history_cli --output-dir $(HISTORY_CONTAINER) --output /dev/null\n\t$(PYTHON) -m codex_wire_audit.history_cli --verify-container $(HISTORY_CONTAINER) --output /dev/null\n",
+              "history-assets:\n\t@set -eu; tmp=$$(mktemp); trap 'rm -f \"$$tmp\"' EXIT; \\\n\trm -rf $(HISTORY_CONTAINER); \\\n\t$(PYTHON) -m codex_wire_audit.history_cli --output-dir $(HISTORY_CONTAINER) --output $$tmp; \\\n\t$(PYTHON) -m codex_wire_audit.history_cli --verify-container $(HISTORY_CONTAINER) --output $$tmp\n",
+          )
+          path.write_text(text, encoding="utf-8")
+          PY
       - name: Install constrained package
         working-directory: toolchain
         run: python -m pip install --constraint ci/constraints.txt -e '.[test]'
