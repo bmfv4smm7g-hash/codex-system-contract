@@ -141,4 +141,37 @@ text = text.replace('assert len(list((first / "versions").glob("*.json"))) == 10
 text = text.replace('assert len(list((first / "keys").glob("*.json"))) == 7', 'assert len(list((first / "keys").glob("*.json"))) == 8')
 metadata_tests.write_text(text, encoding="utf-8")
 
+source_registry = ROOT / "toolchain/codex_wire_audit/source_registry.py"
+replace_once(
+    source_registry,
+    '''def _merge_extended_contract_specs(specs: list[SourceSpec]) -> None:
+    _merge_optional_specs(specs, _HISTORY_IDENTITY_SPECS, role="history_identity", extractor_id="extractor.history_identity")
+    _merge_optional_specs(specs, _MODEL_CONTROL_PLANE_SPECS, role="model_control_plane", extractor_id="extractor.model_control_plane")
+    _merge_optional_specs(specs, (_APP_SERVER_RPC_SPECS[0],), role="app_server_inventory", extractor_id="extractor.app_server_inventory")
+''',
+    '''def _merge_extended_contract_specs(specs: list[SourceSpec]) -> None:
+    _merge_optional_specs(specs, _HISTORY_IDENTITY_SPECS, role="history_identity", extractor_id="extractor.history_identity")
+    _merge_optional_specs(specs, _MODEL_CONTROL_PLANE_SPECS, role="model_control_plane", extractor_id="extractor.model_control_plane")
+    _merge_optional_specs(specs, (_APP_SERVER_RPC_SPECS[0],), role="app_server_inventory", extractor_id="extractor.app_server_inventory")
+    for index, spec in enumerate(specs):
+        if spec.id != "source_spec.base.compact":
+            continue
+        specs[index] = replace(
+            spec,
+            path_candidates=tuple(
+                dict.fromkeys(
+                    (*spec.path_candidates, "codex-rs/core/src/compact_remote_v2.rs")
+                )
+            ),
+        )
+        break
+''',
+)
+
+write_test = ROOT / "toolchain/tests/test_current_source_layouts.py"
+write_test.write_text(
+    '''from codex_wire_audit.source_registry import default_registry\n\n\ndef test_remote_compaction_supports_legacy_and_current_layouts() -> None:\n    compact = default_registry().get("source_spec.base.compact")\n    assert compact.path_candidates == (\n        "codex-rs/codex-api/src/endpoint/compact.rs",\n        "codex-rs/core/src/compact_remote_v2.rs",\n    )\n''',
+    encoding="utf-8",
+)
+
 print("post-generation proof hardening compatibility updates applied")
