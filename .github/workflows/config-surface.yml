@@ -43,6 +43,7 @@ jobs:
           )
           path.write_text(text, encoding="utf-8")
           PY
+          python toolchain/tools/post_prepare_proof_hardening.py
       - name: Install constrained package
         working-directory: toolchain
         run: python -m pip install --constraint ci/constraints.txt -e '.[test]'
