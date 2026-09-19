@@ -32,6 +32,28 @@ def main() -> None:
 
     mutation = toolchain / "codex_wire_audit/extractors/app_server_history_mutation.py"
     mutation_text = mutation.read_text(encoding="utf-8")
+    build_marker = '''def build_history_mutation(
+'''
+    helper = '''def _fork_has_fresh_id(thread_manager: SourceFile) -> bool:
+    legacy = _has(
+        thread_manager,
+        "The new thread will have",
+        "a fresh id.",
+        "pub async fn fork_prepared_thread",
+    )
+    current = _has(
+        thread_manager,
+        "The new thread has a fresh id.",
+        "pub async fn fork_thread",
+        "pub async fn fork_prepared_thread",
+    )
+    return legacy or current
+
+
+'''
+    if mutation_text.count(build_marker) != 1:
+        raise RuntimeError("app-server history builder marker changed")
+    mutation_text = mutation_text.replace(build_marker, helper + build_marker, 1)
     old_fresh = '''    fork_fresh_id = _has(
         thread_manager,
         "The new thread will have",
@@ -39,17 +61,7 @@ def main() -> None:
         "pub async fn fork_prepared_thread",
     )
 '''
-    new_fresh = '''    fork_fresh_id = _has(
-        thread_manager,
-        "The new thread will have",
-        "a fresh id.",
-        "pub async fn fork_prepared_thread",
-    ) or _has(
-        thread_manager,
-        "The new thread has a fresh id.",
-        "pub async fn fork_thread",
-        "pub async fn fork_prepared_thread",
-    )
+    new_fresh = '''    fork_fresh_id = _fork_has_fresh_id(thread_manager)
 '''
     if mutation_text.count(old_fresh) != 1:
         raise RuntimeError("app-server fresh-fork predicate marker changed")
