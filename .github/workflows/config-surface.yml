@@ -45,6 +45,7 @@ jobs:
           PY
           python toolchain/tools/post_prepare_proof_hardening.py
           python toolchain/tools/fix_current_source_layout_test.py
+          python toolchain/tools/add_canonical_current_main_checker.py
       - name: Install constrained package
         working-directory: toolchain
         run: python -m pip install --constraint ci/constraints.txt -e '.[test]'
@@ -74,11 +75,15 @@ jobs:
           codex-wire-audit --json --repo-root "$pinned" --coverage-profile hybrid_v19 \
             --fail-on never --emit-system-contract "$proof/pinned-system-contract.json" \
             --output "$proof/pinned-report.json"
-          codex-wire-audit --json --repo-root "$current" --coverage-profile current_main_static_full \
-            --fail-on never --emit-system-contract "$proof/current-system-contract.json" \
-            --output "$proof/current-report.json"
+          current_status=0
+          python toolchain/tools/check_current_main_static.py \
+            --repo-root "$current" \
+            --profile current_main_static_full \
+            --system-contract-output "$proof/current-system-contract.json" \
+            --output "$proof/current-report.json" || current_status=$?
           git -C "$pinned" rev-parse HEAD | tee "$proof/pinned-codex-head.txt"
           git -C "$current" rev-parse HEAD | tee "$proof/current-codex-head.txt"
+          exit "$current_status"
       - name: Collect generated patch
         if: always()
         run: |
