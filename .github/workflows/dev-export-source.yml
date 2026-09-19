@@ -28,21 +28,40 @@ jobs:
           path: codex-current
           fetch-depth: 1
           persist-credentials: false
-      - name: Archive branch and history-identity sources
+      - name: Archive branch and app-server evidence sources
         run: |
           set -euo pipefail
           git archive --format=tar.gz -o "$RUNNER_TEMP/codex-system-contract.tar.gz" HEAD
+
           paths=(
+            codex-rs/app-server-protocol/src/protocol/common.rs
+            codex-rs/app-server-protocol/src/protocol/v2/thread.rs
+            codex-rs/app-server-protocol/src/protocol/v2/thread_data.rs
+            codex-rs/app-server-protocol/src/protocol/v2/turn.rs
+            codex-rs/app-server-protocol/src/protocol/v2/item.rs
+            codex-rs/app-server-protocol/src/rpc.rs
+            codex-rs/app-server/src/request_processors/thread_processor.rs
+            codex-rs/core/src/thread_manager.rs
+            codex-rs/tui/src/app_server_session.rs
+            codex-rs/tui/src/app_server_session/history.rs
+            codex-rs/tui/src/app_backtrack.rs
+            codex-rs/thread-store/src/local/paginated_fork.rs
+            codex-rs/thread-store/src/local/revert_thread.rs
             codex-rs/core/src/client.rs
             codex-rs/core/src/session/session.rs
-            codex-rs/core/src/thread_manager.rs
-            codex-rs/app-server/src/request_processors/thread_processor.rs
-            codex-rs/tui/src/app_backtrack.rs
-            codex-rs/thread-store/src/local/revert_thread.rs
           )
-          tar -czf "$RUNNER_TEMP/codex-history-sources.tar.gz" \
-            "${paths[@]/#/codex-pinned/}" \
-            "${paths[@]/#/codex-current/}"
+
+          stage="$RUNNER_TEMP/codex-evidence"
+          mkdir -p "$stage"
+          for checkout in codex-pinned codex-current; do
+            for path in "${paths[@]}"; do
+              if test -f "$checkout/$path"; then
+                mkdir -p "$stage/$checkout/$(dirname "$path")"
+                cp "$checkout/$path" "$stage/$checkout/$path"
+              fi
+            done
+          done
+          tar -C "$stage" -czf "$RUNNER_TEMP/codex-evidence-sources.tar.gz" .
           git -C codex-pinned rev-parse HEAD > "$RUNNER_TEMP/pinned-head.txt"
           git -C codex-current rev-parse HEAD > "$RUNNER_TEMP/current-head.txt"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
@@ -50,7 +69,7 @@ jobs:
           name: dev-source-export
           path: |
             ${{ runner.temp }}/codex-system-contract.tar.gz
-            ${{ runner.temp }}/codex-history-sources.tar.gz
+            ${{ runner.temp }}/codex-evidence-sources.tar.gz
             ${{ runner.temp }}/pinned-head.txt
             ${{ runner.temp }}/current-head.txt
           if-no-files-found: error
