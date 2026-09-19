@@ -15,11 +15,43 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           persist-credentials: false
-      - name: Archive exact branch source
-        run: git archive --format=tar.gz -o "$RUNNER_TEMP/codex-system-contract.tar.gz" HEAD
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: openai/codex
+          ref: 6af345407d9c2a568da9d01b6c4b81a9e61495c0
+          path: codex-pinned
+          persist-credentials: false
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: openai/codex
+          ref: main
+          path: codex-current
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Archive branch and history-identity sources
+        run: |
+          set -euo pipefail
+          git archive --format=tar.gz -o "$RUNNER_TEMP/codex-system-contract.tar.gz" HEAD
+          paths=(
+            codex-rs/core/src/client.rs
+            codex-rs/core/src/session/session.rs
+            codex-rs/core/src/thread_manager.rs
+            codex-rs/app-server/src/request_processors/thread_processor.rs
+            codex-rs/tui/src/app_backtrack.rs
+            codex-rs/thread-store/src/local/revert_thread.rs
+          )
+          tar -czf "$RUNNER_TEMP/codex-history-sources.tar.gz" \
+            "${paths[@]/#/codex-pinned/}" \
+            "${paths[@]/#/codex-current/}"
+          git -C codex-pinned rev-parse HEAD > "$RUNNER_TEMP/pinned-head.txt"
+          git -C codex-current rev-parse HEAD > "$RUNNER_TEMP/current-head.txt"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: dev-source-export
-          path: ${{ runner.temp }}/codex-system-contract.tar.gz
+          path: |
+            ${{ runner.temp }}/codex-system-contract.tar.gz
+            ${{ runner.temp }}/codex-history-sources.tar.gz
+            ${{ runner.temp }}/pinned-head.txt
+            ${{ runner.temp }}/current-head.txt
           if-no-files-found: error
           retention-days: 1
