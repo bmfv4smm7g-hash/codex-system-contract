@@ -30,6 +30,31 @@ def main() -> None:
         raise RuntimeError("turn metadata identity-domain enum marker changed")
     schema.write_text(schema_text.replace(old, new, 1), encoding="utf-8")
 
+    mutation = toolchain / "codex_wire_audit/extractors/app_server_history_mutation.py"
+    mutation_text = mutation.read_text(encoding="utf-8")
+    old_fresh = '''    fork_fresh_id = _has(
+        thread_manager,
+        "The new thread will have",
+        "a fresh id.",
+        "pub async fn fork_prepared_thread",
+    )
+'''
+    new_fresh = '''    fork_fresh_id = _has(
+        thread_manager,
+        "The new thread will have",
+        "a fresh id.",
+        "pub async fn fork_prepared_thread",
+    ) or _has(
+        thread_manager,
+        "The new thread has a fresh id.",
+        "pub async fn fork_thread",
+        "pub async fn fork_prepared_thread",
+    )
+'''
+    if mutation_text.count(old_fresh) != 1:
+        raise RuntimeError("app-server fresh-fork predicate marker changed")
+    mutation.write_text(mutation_text.replace(old_fresh, new_fresh, 1), encoding="utf-8")
+
     makefile = toolchain / "Makefile"
     makefile_text = makefile.read_text(encoding="utf-8")
     old_targets = '''assets: legacy-assets history-assets metrics
