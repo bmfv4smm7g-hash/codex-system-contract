@@ -26,7 +26,9 @@ jobs:
           cache: pip
           cache-dependency-path: toolchain/ci/constraints.txt
       - name: Apply proof-hardening source patch
-        run: python toolchain/tools/prepare_proof_hardening.py
+        run: |
+          sed -i 's#codex_wire_audit/proof_profile_data/proof-profiles.v3.json#codex_wire_audit/coverage_profiles.v3.json#' toolchain/tools/prepare_proof_hardening.py
+          python toolchain/tools/prepare_proof_hardening.py
       - name: Install constrained package
         working-directory: toolchain
         run: python -m pip install --constraint ci/constraints.txt -e '.[test]'
