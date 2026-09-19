@@ -1,0 +1,25 @@
+name: dev-export-source
+
+on:
+  push:
+    branches:
+      - fix/history-identity-proof-hardening
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Archive exact branch source
+        run: git archive --format=tar.gz -o "$RUNNER_TEMP/codex-system-contract.tar.gz" HEAD
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: dev-source-export
+          path: ${{ runner.temp }}/codex-system-contract.tar.gz
+          if-no-files-found: error
+          retention-days: 1
