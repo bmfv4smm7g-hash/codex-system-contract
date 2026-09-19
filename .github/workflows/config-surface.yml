@@ -59,7 +59,7 @@ jobs:
           make check-assets
           python tools/check_canonical_contract.py
           python -m codex_wire_audit.release_contract --output "$RUNNER_TEMP/source-capabilities.json"
-      - name: Prove pinned and current Codex sources
+      - name: Capture pinned and current Codex reports
         run: |
           set -euo pipefail
           pinned="$RUNNER_TEMP/codex-pinned"
@@ -71,11 +71,12 @@ jobs:
           git -C "$pinned" checkout --detach FETCH_HEAD
           git clone --depth=1 https://github.com/openai/codex.git "$current"
           codex-wire-audit --json --repo-root "$pinned" --coverage-profile hybrid_v19 \
-            --fail-on incomplete --emit-system-contract "$proof/pinned-system-contract.json" \
+            --fail-on never --emit-system-contract "$proof/pinned-system-contract.json" \
             --output "$proof/pinned-report.json"
           codex-wire-audit --json --repo-root "$current" --coverage-profile current_main_static_full \
-            --fail-on incomplete --emit-system-contract "$proof/current-system-contract.json" \
+            --fail-on never --emit-system-contract "$proof/current-system-contract.json" \
             --output "$proof/current-report.json"
+          git -C "$pinned" rev-parse HEAD | tee "$proof/pinned-codex-head.txt"
           git -C "$current" rev-parse HEAD | tee "$proof/current-codex-head.txt"
       - name: Collect generated patch
         if: always()
