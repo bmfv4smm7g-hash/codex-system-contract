@@ -30,6 +30,22 @@ def main() -> None:
         raise RuntimeError("turn metadata identity-domain enum marker changed")
     schema.write_text(schema_text.replace(old, new, 1), encoding="utf-8")
 
+    makefile = toolchain / "Makefile"
+    makefile_text = makefile.read_text(encoding="utf-8")
+    old_targets = '''assets: legacy-assets history-assets metrics
+
+check-assets: check-legacy-assets check-history-assets check-metrics schemas
+'''
+    new_targets = '''assets: legacy-assets history-assets metrics
+	$(PYTHON) tools/check_canonical_contract.py --write-assets
+
+check-assets: check-legacy-assets check-history-assets check-metrics schemas
+	$(PYTHON) tools/check_canonical_contract.py
+'''
+    if makefile_text.count(old_targets) != 1:
+        raise RuntimeError("Makefile asset target marker changed")
+    makefile.write_text(makefile_text.replace(old_targets, new_targets, 1), encoding="utf-8")
+
 
 if __name__ == "__main__":
     main()
