@@ -182,6 +182,32 @@ fn handle_retryable_response_stream_error() {
     provider = """
 fn websocket_url_for_path() { match scheme { "http" => "ws", "https" => "wss", "ws" | "wss" => return; } }
 """
+    http_client = """
+pub(crate) enum RequestLogging { Enabled, Disabled }
+pub(crate) fn log_response(response: &Response) {
+    if self.request_logging == RequestLogging::Enabled {
+        tracing::debug!(headers = ?response.headers(), "Request completed");
+    }
+}
+"""
+    default_client = """
+pub fn create_client_for_route() { default_http_client_builder(); }
+pub fn create_client_with_chatgpt_cookies() {
+    default_http_client_builder().without_request_logging();
+}
+fn default_http_client_builder() -> HttpClientBuilder {
+    HttpClientBuilder::new().with_chatgpt_cloudflare_cookie_store()
+}
+"""
+    cookie_store = """
+impl CookieStore for ChatGptCloudflareCookieStore {
+    fn set_cookies() {
+        cookie_headers.filter(|header| is_allowed_cloudflare_set_cookie_header(header));
+    }
+}
+fn is_allowed_cloudflare_set_cookie_header() {}
+fn is_chatgpt_cookie_url() {}
+"""
     rows = {
         "common": _file("source_spec.base.common", "common", "codex-rs/codex-api/src/common.rs", common),
         "core": _file("source_spec.base.core", "core", "codex-rs/core/src/client.rs", core),
@@ -192,6 +218,9 @@ fn websocket_url_for_path() { match scheme { "http" => "ws", "https" => "wss", "
         "session": _file("source_spec.extra.responses_transport_session", "responses_transport_session", "codex-rs/core/src/session/session.rs", session),
         "retry": _file("source_spec.extra.responses_transport_retry", "responses_transport_retry", "codex-rs/core/src/responses_retry.rs", retry),
         "provider": _file("source_spec.extra.responses_transport_provider", "responses_transport_provider", "codex-rs/codex-api/src/provider.rs", provider),
+        "http_client": _file("source_spec.extra.responses_http_client", "responses_http_client", "codex-rs/http-client/src/client.rs", http_client),
+        "default_client": _file("source_spec.base.default_client", "default_client", "codex-rs/login/src/auth/default_client.rs", default_client),
+        "cookie_store": _file("source_spec.extra.responses_chatgpt_cookie_store", "responses_chatgpt_cookie_store", "codex-rs/http-client/src/chatgpt_cloudflare_cookies.rs", cookie_store),
     }
     if omit:
         rows.pop(omit)
@@ -214,6 +243,8 @@ def test_default_registry_assigns_responses_sources_to_native_domain():
         "source_spec.base.common", "source_spec.base.core", "source_spec.base.http", "source_spec.base.ws",
         "source_spec.extra.responses_transport_startup", "source_spec.extra.responses_transport_session",
         "source_spec.extra.responses_transport_retry", "source_spec.extra.responses_transport_provider",
+        "source_spec.extra.responses_http_client", "source_spec.base.default_client",
+        "source_spec.extra.responses_chatgpt_cookie_store",
     }
     assert by_extractor["extractor.responses_lite"] == {"source_spec.base.core"}
     assert by_extractor["extractor.response_events"] == {
@@ -237,6 +268,12 @@ def test_request_extractor_parses_exact_wire_field_inventory():
     assert lifecycle["state_scope"]["fallback_sticky_across_turns"] is True
     assert lifecycle["fallback"]["warning_prefix"] == "Falling back from WebSockets to HTTPS transport."
     assert lifecycle["selection"]["scheme_pairing"]["https_base"] == {"websocket": "wss", "fallback_http": "https"}
+    http_diagnostics = result.data["http_transport"]["diagnostics"]
+    assert http_diagnostics["raw_response_header_logging"] is True
+    assert http_diagnostics["https_set_cookie_diagnostic_exposure"] is True
+    assert http_diagnostics["chatgpt_cookie_persistence_allowlisted"] is True
+    assert http_diagnostics["cookie_store_filtering_sanitizes_diagnostics"] is False
+    assert "RESPONSES_HTTP_SET_COOKIE_DIAGNOSTIC_EXPOSURE" in {item.code for item in diagnostics.values()}
 
 
 def test_lite_extractor_owns_transformation_not_prompt_composition():
@@ -310,3 +347,20 @@ def test_transport_source_identity_is_exact() -> None:
     assert registry.get("source_spec.extra.responses_transport_session").primary_path == "codex-rs/core/src/session/session.rs"
     assert registry.get("source_spec.extra.responses_transport_retry").primary_path == "codex-rs/core/src/responses_retry.rs"
     assert registry.get("source_spec.extra.responses_transport_provider").primary_path == "codex-rs/codex-api/src/provider.rs"
+    assert registry.get("source_spec.extra.responses_http_client").primary_path == "codex-rs/http-client/src/client.rs"
+    assert registry.get("source_spec.base.default_client").primary_path == "codex-rs/login/src/auth/default_client.rs"
+    assert registry.get("source_spec.extra.responses_chatgpt_cookie_store").primary_path == "codex-rs/http-client/src/chatgpt_cloudflare_cookies.rs"
+
+
+
+def test_raw_response_header_diagnostic_drift_fails_closed() -> None:
+    snapshot = _snapshot()
+    source = snapshot.files["source_spec.extra.responses_http_client"]
+    broken = source.text.replace("headers = ?response.headers()", "headers = ?redacted_headers(response.headers())")
+    files = dict(snapshot.files)
+    files[source.spec_id] = _file(source.spec_id, "responses_http_client", source.selected_path, broken)
+    drifted = SourceSnapshot(snapshot.revision, files)
+    diagnostics = DiagnosticCollector()
+    result = ResponsesRequestExtractor().extract(drifted, diagnostics)
+    assert result.semantic_complete is False
+    assert "RESPONSES_HTTP_RAW_HEADER_DIAGNOSTIC_MISSING" in {item.code for item in diagnostics.values()}
