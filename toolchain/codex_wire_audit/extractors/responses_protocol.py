@@ -15,11 +15,15 @@ from ..diagnostics import DiagnosticCollector
 from ..models import SourceFile, SourceSnapshot
 from .registry import ExtractorResult, register_extractor
 from .responses_transport import (
+    COOKIE_STORE,
+    DEFAULT_CLIENT,
+    HTTP_CLIENT,
     PROVIDER,
     RETRY,
     SESSION,
     STARTUP,
     build_transport_lifecycle,
+    classify_http_response_diagnostics,
     validate_transport_sources,
 )
 
@@ -171,7 +175,10 @@ def _result(
 
 class ResponsesRequestExtractor:
     extractor_id = REQUEST_ID
-    source_spec_ids = (COMMON, CORE, HTTP, WS, STARTUP, SESSION, RETRY, PROVIDER)
+    source_spec_ids = (
+        COMMON, CORE, HTTP, WS, STARTUP, SESSION, RETRY, PROVIDER,
+        HTTP_CLIENT, DEFAULT_CLIENT, COOKIE_STORE,
+    )
 
     def extract(self, snapshot: SourceSnapshot, diagnostics: DiagnosticCollector) -> ExtractorResult:
         sources = {spec_id: snapshot.files.get(spec_id) for spec_id in self.source_spec_ids}
@@ -273,6 +280,12 @@ class ResponsesRequestExtractor:
             provider=provider,
         )
         complete &= transport_complete
+        diagnostics_complete, response_diagnostics = classify_http_response_diagnostics(
+            diagnostics=diagnostics, extractor_id=REQUEST_ID,
+            http_client=sources[HTTP_CLIENT], default_client=sources[DEFAULT_CLIENT],
+            cookie_store=sources[COOKIE_STORE],
+        )
+        complete &= diagnostics_complete
 
         http_fields = _struct_fields(common.text, "ResponsesApiRequest")
         ws_fields = _struct_fields(common.text, "ResponseCreateWsRequest")
@@ -337,6 +350,7 @@ class ResponsesRequestExtractor:
                 "body": "encoded JSON ResponsesApiRequest",
                 "headers": "session/thread, x-client-request-id, optional subagent, compatibility/attestation and turn-state headers are composed outside the body",
                 "compression": ["none", "zstd"],
+                "diagnostics": response_diagnostics,
             },
             "websocket_transport": {
                 "message_type": "response.create",
@@ -356,6 +370,9 @@ class ResponsesRequestExtractor:
                 "session": _evidence(session, "schedule_startup_prewarm/record_initial_history"),
                 "retry": _evidence(retry, "handle_retryable_response_stream_error"),
                 "provider": _evidence(provider, "websocket_url_for_path"),
+                "http_client": _evidence(sources[HTTP_CLIENT], "HttpClient::log_response/RequestBuilder::send"),
+                "default_client": _evidence(sources[DEFAULT_CLIENT], "create_client_for_route/default_http_client_builder"),
+                "cookie_store": _evidence(sources[COOKIE_STORE], "ChatGptCloudflareCookieStore"),
             },
         }
         return _result(REQUEST_ID, self.source_spec_ids, body, complete, REQUEST_SCHEMA_VERSION)
