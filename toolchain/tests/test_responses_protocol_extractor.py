@@ -352,7 +352,6 @@ def test_transport_source_identity_is_exact() -> None:
     assert registry.get("source_spec.extra.responses_chatgpt_cookie_store").primary_path == "codex-rs/http-client/src/chatgpt_cloudflare_cookies.rs"
 
 
-
 def test_raw_response_header_diagnostic_drift_fails_closed() -> None:
     snapshot = _snapshot()
     source = snapshot.files["source_spec.extra.responses_http_client"]
