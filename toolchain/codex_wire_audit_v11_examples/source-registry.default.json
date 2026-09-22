@@ -1,11 +1,11 @@
 {
   "counts": {
     "base": 16,
-    "extra": 118,
-    "optional": 144,
+    "extra": 120,
+    "optional": 146,
     "required": 16,
     "surface": 26,
-    "total": 160
+    "total": 162
   },
   "schema_version": "1.0.0",
   "sources": {
@@ -116,8 +116,14 @@
       ]
     },
     "source_spec.base.default_client": {
-      "expected_symbols": [],
-      "extractor_ids": [],
+      "expected_symbols": [
+        "create_client_for_route",
+        "default_http_client_builder",
+        "without_request_logging"
+      ],
+      "extractor_ids": [
+        "extractor.responses_request"
+      ],
       "group": "base",
       "id": "source_spec.base.default_client",
       "legacy_key": "default_client",
@@ -126,7 +132,8 @@
       ],
       "required": true,
       "roles": [
-        "legacy_base"
+        "legacy_base",
+        "responses_request"
       ]
     },
     "source_spec.base.headers": {
@@ -2231,6 +2238,46 @@
       "required": false,
       "roles": [
         "legacy_extra"
+      ]
+    },
+    "source_spec.extra.responses_chatgpt_cookie_store": {
+      "expected_symbols": [
+        "is_chatgpt_cookie_url",
+        "is_allowed_cloudflare_set_cookie_header",
+        "CookieStore"
+      ],
+      "extractor_ids": [
+        "extractor.responses_request"
+      ],
+      "group": "extra",
+      "id": "source_spec.extra.responses_chatgpt_cookie_store",
+      "legacy_key": "responses_chatgpt_cookie_store",
+      "path_candidates": [
+        "codex-rs/http-client/src/chatgpt_cloudflare_cookies.rs"
+      ],
+      "required": false,
+      "roles": [
+        "responses_request"
+      ]
+    },
+    "source_spec.extra.responses_http_client": {
+      "expected_symbols": [
+        "RequestLogging",
+        "log_response",
+        "response.headers"
+      ],
+      "extractor_ids": [
+        "extractor.responses_request"
+      ],
+      "group": "extra",
+      "id": "source_spec.extra.responses_http_client",
+      "legacy_key": "responses_http_client",
+      "path_candidates": [
+        "codex-rs/http-client/src/client.rs"
+      ],
+      "required": false,
+      "roles": [
+        "responses_request"
       ]
     },
     "source_spec.extra.responses_transport_provider": {

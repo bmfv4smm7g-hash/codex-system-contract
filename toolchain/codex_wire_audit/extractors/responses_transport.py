@@ -10,6 +10,9 @@ STARTUP = "source_spec.extra.responses_transport_startup"
 SESSION = "source_spec.extra.responses_transport_session"
 RETRY = "source_spec.extra.responses_transport_retry"
 PROVIDER = "source_spec.extra.responses_transport_provider"
+HTTP_CLIENT = "source_spec.extra.responses_http_client"
+DEFAULT_CLIENT = "source_spec.base.default_client"
+COOKIE_STORE = "source_spec.extra.responses_chatgpt_cookie_store"
 
 
 def _require(
@@ -112,6 +115,102 @@ def validate_transport_sources(
             strict_failure=True,
         )
     return complete, ordered
+
+
+def classify_http_response_diagnostics(
+    *,
+    diagnostics: DiagnosticCollector,
+    extractor_id: str,
+    http_client: SourceFile,
+    default_client: SourceFile,
+    cookie_store: SourceFile,
+) -> tuple[bool, dict[str, Any]]:
+    complete = _require(
+        diagnostics,
+        extractor_id=extractor_id,
+        source=http_client,
+        entity="responses_request.http.diagnostics",
+        tokens=(
+            ("RESPONSES_HTTP_REQUEST_LOGGING_GATE_MISSING", "RequestLogging::Enabled"),
+            ("RESPONSES_HTTP_RESPONSE_LOGGER_MISSING", "pub(crate) fn log_response"),
+            ("RESPONSES_HTTP_RAW_HEADER_DIAGNOSTIC_MISSING", "headers = ?response.headers()"),
+            ("RESPONSES_HTTP_DEBUG_DIAGNOSTIC_MISSING", "tracing::debug!"),
+        ),
+    )
+    complete &= _require(
+        diagnostics,
+        extractor_id=extractor_id,
+        source=default_client,
+        entity="responses_request.http.client_defaults",
+        tokens=(
+            ("RESPONSES_DEFAULT_ROUTE_CLIENT_MISSING", "pub fn create_client_for_route("),
+            ("RESPONSES_DEFAULT_HTTP_BUILDER_MISSING", "fn default_http_client_builder()"),
+            ("RESPONSES_CHATGPT_COOKIE_STORE_WIRING_MISSING", ".with_chatgpt_cloudflare_cookie_store()"),
+            ("RESPONSES_NO_LOGGING_ESCAPE_HATCH_MISSING", ".without_request_logging()"),
+        ),
+    )
+    complete &= _require(
+        diagnostics,
+        extractor_id=extractor_id,
+        source=cookie_store,
+        entity="responses_request.http.cookie_store",
+        tokens=(
+            ("RESPONSES_COOKIE_STORE_IMPL_MISSING", "impl CookieStore for ChatGptCloudflareCookieStore"),
+            ("RESPONSES_COOKIE_ALLOWLIST_MISSING", "is_allowed_cloudflare_set_cookie_header"),
+            ("RESPONSES_COOKIE_HTTPS_SCOPE_MISSING", "fn is_chatgpt_cookie_url"),
+        ),
+    )
+
+    raw_header_log_sites = http_client.text.count("headers = ?response.headers()")
+    builder_tail = default_client.text.split("fn default_http_client_builder()", 1)
+    builder_body = builder_tail[1].split("\n}", 1)[0] if len(builder_tail) == 2 else ""
+    default_request_logging_enabled = ".without_request_logging()" not in builder_body
+    configured_cookie_opt_out = (
+        "create_client_with_chatgpt_cookies" in default_client.text
+        and ".without_request_logging()" in default_client.text
+    )
+    cookie_persistence_allowlisted = (
+        "filter(|header| is_allowed_cloudflare_set_cookie_header(header))" in cookie_store.text
+    )
+    exposed = raw_header_log_sites > 0 and default_request_logging_enabled
+    if exposed:
+        diagnostics.emit(
+            code="RESPONSES_HTTP_SET_COOKIE_DIAGNOSTIC_EXPOSURE",
+            severity="warning",
+            category="responses_request",
+            message=(
+                "Logging-enabled HTTP clients render the complete response HeaderMap; HTTPS "
+                "Set-Cookie values can therefore reach debug diagnostics independently of the "
+                "ChatGPT cookie-store allowlist."
+            ),
+            extractor_id=extractor_id,
+            entity_id="responses_request.http.diagnostics",
+            source_refs=[http_client.spec_id, default_client.spec_id, cookie_store.spec_id],
+            details={
+                "http_client_path": http_client.selected_path,
+                "default_client_path": default_client.selected_path,
+                "cookie_store_path": cookie_store.selected_path,
+                "raw_response_header_log_sites": raw_header_log_sites,
+            },
+            recoverable=True,
+            strict_failure=False,
+        )
+
+    return complete, {
+        "level": "debug",
+        "request_logging_default": "enabled" if default_request_logging_enabled else "disabled",
+        "raw_response_header_logging": raw_header_log_sites > 0,
+        "raw_response_header_log_sites": raw_header_log_sites,
+        "https_set_cookie_diagnostic_exposure": exposed,
+        "set_cookie_redacted_before_diagnostics": False if exposed else None,
+        "chatgpt_cookie_persistence_allowlisted": cookie_persistence_allowlisted,
+        "cookie_store_filtering_sanitizes_diagnostics": False,
+        "configured_cookie_client_disables_request_logging": configured_cookie_opt_out,
+        "boundary": (
+            "cookie persistence and cookie diagnostics are separate: rejecting a Set-Cookie from "
+            "the shared jar does not remove it from the response HeaderMap rendered by diagnostics"
+        ),
+    }
 
 
 def build_transport_lifecycle(*, prewarm_before_history_restore: bool) -> dict[str, Any]:
