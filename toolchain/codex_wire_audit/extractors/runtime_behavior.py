@@ -24,6 +24,7 @@ SCHEMA_VERSION = "1.1.0"
 
 SSE = "source_spec.base.response_sse"
 WS = "source_spec.base.ws"
+CORE = "source_spec.base.core"
 RESPONSES_RETRY = "source_spec.extra.responses_transport_retry"
 PROMPT_TURN = "source_spec.extra.prompt_turn"
 API_BRIDGE = "source_spec.extra.response_api_bridge"
@@ -39,6 +40,7 @@ TUI_SLASH = "source_spec.extra.tui_slash_command"
 SOURCE_IDS = (
     SSE,
     WS,
+    CORE,
     RESPONSES_RETRY,
     PROMPT_TURN,
     API_BRIDGE,
@@ -118,25 +120,40 @@ def _struct_fields(source: SourceFile | None, name: str) -> list[str]:
 def _codex_error_retryability(source: SourceFile | None) -> dict[str, Any]:
     if source is None:
         return {"observed": False, "retryable": [], "terminal": []}
-    body = _balanced_body(source.text, r"pub\s+fn\s+is_retryable\s*\(&self\)\s*->\s*bool")
+
+    body = _balanced_body(
+        source.text,
+        r"pub\s+fn\s+retry_delay\s*\(&self,\s*retry_count:\s*u64\)\s*->\s*Option<Duration>",
+    )
+    implementation = "retry_delay"
+    value_pattern = r"=>\s*(None|Some\s*\()"
+    if body is None:
+        body = _balanced_body(source.text, r"pub\s+fn\s+is_retryable\s*\(&self\)\s*->\s*bool")
+        implementation = "is_retryable"
+        value_pattern = r"=>\s*(true|false)\s*,"
     if body is None:
         return {"observed": False, "retryable": [], "terminal": []}
 
     table: dict[str, bool] = {}
     cursor = 0
-    for match in re.finditer(r"=>\s*(true|false)\s*,", body):
+    for match in re.finditer(value_pattern, body):
         arm = body[cursor : match.start()]
-        value = match.group(1) == "true"
+        value = match.group(1) in {"true"} or match.group(1).startswith("Some")
         for variant in re.findall(r"CodexErrorDetails::([A-Za-z_][A-Za-z0-9_]*)", arm):
             table[variant] = value
         cursor = match.end()
 
     return {
         "observed": bool(table),
+        "implementation": implementation,
         "retryable": sorted(name for name, retryable in table.items() if retryable),
         "terminal": sorted(name for name, retryable in table.items() if not retryable),
         "table": {name: table[name] for name in sorted(table)},
-        "source_semantics": "CodexErr::is_retryable match table",
+        "source_semantics": (
+            "CodexErr::retry_delay(retry_count) Option table"
+            if implementation == "retry_delay"
+            else "legacy CodexErr::is_retryable match table"
+        ),
     }
 
 
@@ -187,6 +204,40 @@ def _api_bridge_map(source: SourceFile | None) -> dict[str, Any]:
     }
 
 
+def _turn_state_reconnect(core: SourceFile | None, ws: SourceFile | None) -> dict[str, Any]:
+    ws_body = (
+        _balanced_body(ws.text, r"async\s+fn\s+run_websocket_response_stream\b")
+        if ws is not None
+        else None
+    )
+    generic_close = bool(
+        ws_body
+        and "Message::Close(_)" in ws_body
+        and "websocket closed by server before response.completed" in ws_body
+    )
+    close_code_inspected = bool(ws_body and ("frame.code" in ws_body or "close.code" in ws_body))
+    core_text = core.text if core is not None else ""
+    owner_reset = "if owner_changed" in core_text and "self.turn_state = Arc::new(OnceLock::new())" in core_text
+    reconnect_detected = "conn.is_closed().await" in core_text
+    replayed = "client_metadata.insert(X_CODEX_TURN_STATE_HEADER" in core_text
+    return {
+        "close_frame": {
+            "observed": generic_close,
+            "close_code_inspected": close_code_inspected,
+            "service_restart_1012_special_cased": bool(ws_body and "1012" in ws_body),
+            "api_error": "Stream" if generic_close else None,
+        },
+        "turn_state": {
+            "fresh_per_logical_turn": "turn_state: Arc::new(OnceLock::new())" in core_text,
+            "replayed_in_websocket_client_metadata": replayed,
+            "physical_reconnect_detected": reconnect_detected,
+            "preserved_across_plain_connection_close": reconnect_detected and replayed,
+            "reset_on_auth_owner_change": owner_reset,
+            "source_semantics": "WebSocket session state is reset independently from the turn-scoped OnceLock",
+        },
+    }
+
+
 def _responses_error_map(
     sse: SourceFile | None,
     ws: SourceFile | None,
@@ -194,6 +245,7 @@ def _responses_error_map(
     retry: SourceFile | None,
     api_bridge: SourceFile | None,
     protocol_error: SourceFile | None,
+    core: SourceFile | None,
 ) -> dict[str, Any]:
     return {
         "response_failed": {
@@ -306,18 +358,37 @@ def _responses_error_map(
         },
         "api_to_codex_error": _api_bridge_map(api_bridge),
         "codex_error_retryability": _codex_error_retryability(protocol_error),
+        "websocket_reconnect_state": _turn_state_reconnect(core, ws),
         "turn_retry_control": {
-            "retryability_gate": _rule(
-                turn,
-                tokens=("if !err.is_retryable()", "handle_retryable_response_stream_error"),
-                source_semantics="sampling loop returns terminal errors before entering retry handler",
-                gate="CodexErr::is_retryable()",
+            "retryability_gate": (
+                _rule(
+                    retry,
+                    tokens=("let Some(delay) = err.retry_delay(retry_count) else", "return Err(err);"),
+                    source_semantics="current retry handler treats retry_delay=None as terminal",
+                    gate="CodexErr::retry_delay(retry_count)",
+                )
+                if _observed(retry, "let Some(delay) = err.retry_delay(retry_count) else")
+                else _rule(
+                    turn,
+                    tokens=("if !err.is_retryable()", "handle_retryable_response_stream_error"),
+                    source_semantics="legacy sampling loop rejects terminal errors before the retry handler",
+                    gate="CodexErr::is_retryable()",
+                )
             ),
-            "retry_delay": _rule(
-                retry,
-                tokens=("err.retry_delay().unwrap_or_else(|| backoff(retry_count))",),
-                source_semantics="server retry advice wins over local backoff",
-                priority=["error retry_delay", "local backoff"],
+            "retry_delay": (
+                _rule(
+                    protocol_error,
+                    tokens=("pub fn retry_delay(&self, retry_count: u64)", "self.server_retry_delay", "backoff(retry_count)"),
+                    source_semantics="current CodexErr retry policy selects server advice or local backoff",
+                    priority=["server_retry_delay", "local backoff"],
+                )
+                if _observed(protocol_error, "pub fn retry_delay(&self, retry_count: u64)")
+                else _rule(
+                    retry,
+                    tokens=("err.retry_delay().unwrap_or_else(|| backoff(retry_count))",),
+                    source_semantics="legacy retry handler selects server advice or local backoff",
+                    priority=["error retry_delay", "local backoff"],
+                )
             ),
             "websocket_to_http_fallback": _rule(
                 retry,
@@ -496,6 +567,7 @@ class RuntimeBehaviorExtractor:
                 sources[RESPONSES_RETRY],
                 sources[API_BRIDGE],
                 sources[PROTOCOL_ERROR],
+                sources[CORE],
             ),
             "fork": _fork_behavior(
                 sources[THREAD_PROTOCOL],
