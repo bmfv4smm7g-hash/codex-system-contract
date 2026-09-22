@@ -291,7 +291,6 @@ def test_runtime_behavior_separates_fork_lineage_persistence_and_presentation() 
     assert fork["axes"]["rewind_prompt_edit"]["uses_fork"]["observed"]
 
 
-
 def test_retryability_legacy_is_retryable_shape_remains_supported() -> None:
     snapshot = _snapshot()
     source = snapshot.files["source_spec.extra.response_protocol_error"]
