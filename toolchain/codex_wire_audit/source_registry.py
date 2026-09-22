@@ -300,8 +300,9 @@ _RESPONSES_SERVER_RESPONSE_SPECS = (
 )
 
 _RUNTIME_BEHAVIOR_SPECS = (
+    ("source_spec.base.core", "core", "codex-rs/core/src/client.rs", ("turn_state: Arc::new(OnceLock::new())", "client_metadata.insert(X_CODEX_TURN_STATE_HEADER")),
     ("source_spec.extra.response_api_bridge", "response_api_bridge", "codex-rs/codex-api/src/api_bridge.rs", ("map_api_error", "server_is_overloaded", "slow_down", "StatusCode::TOO_MANY_REQUESTS")),
-    ("source_spec.extra.response_protocol_error", "response_protocol_error", "codex-rs/protocol/src/error.rs", ("pub enum CodexErrorDetails", "pub fn is_retryable", "ServerOverloaded", "RateLimitExceeded")),
+    ("source_spec.extra.response_protocol_error", "response_protocol_error", "codex-rs/protocol/src/error.rs", ("pub enum CodexErrorDetails", "pub fn retry_delay", "ServerOverloaded", "RateLimitExceeded")),
     ("source_spec.extra.tui_side", "tui_side", "codex-rs/tui/src/app/side.rs", ("fork_config.ephemeral = true", "fork_side_thread")),
     ("source_spec.extra.tui_slash_command", "tui_slash_command", "codex-rs/tui/src/slash_command.rs", ("SlashCommand::Side", "SlashCommand::Btw", "ephemeral fork")),
 )
