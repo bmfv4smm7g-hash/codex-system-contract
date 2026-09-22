@@ -52,6 +52,37 @@ fn map_wrapped() {
     ApiError::Transport(TransportError::Network("x".into()));
     ApiError::Stream("idle timeout waiting for websocket".into());
 }
+async fn run_websocket_response_stream() {
+    match message {
+        Message::Close(_) => {
+            return Err(ApiError::Stream(
+                "websocket closed by server before response.completed".into(),
+            ));
+        }
+        _ => {}
+    }
+}
+''',
+        ),
+        _file(
+            "source_spec.base.core",
+            "codex-rs/core/src/client.rs",
+            '''
+fn new_session() {
+    turn_state: Arc::new(OnceLock::new());
+}
+fn websocket_connection() {
+    let needs_new = match self.websocket_session.connection.as_ref() {
+        Some(conn) if conn.is_closed().await => true,
+        _ => false,
+    };
+    if owner_changed {
+        self.turn_state = Arc::new(OnceLock::new());
+    }
+}
+fn stream_responses_websocket() {
+    client_metadata.insert(X_CODEX_TURN_STATE_HEADER.to_string(), turn_state.clone());
+}
 ''',
         ),
         _file(
@@ -71,7 +102,7 @@ let report_error = retry_count > 1 || cfg!(debug_assertions) || !responses_webso
             "codex-rs/core/src/session/turn.rs",
             '''
 if !err.is_retryable() { return Err(err); }
-handle_retryable_response_stream_error();
+handle_response_stream_error();
 ''',
         ),
         _file(
@@ -100,15 +131,40 @@ pub enum CodexErrorDetails {
     ConnectionFailed(String),
 }
 impl CodexErr {
-    pub fn is_retryable(&self) -> bool {
+    pub fn retry_delay(&self, retry_count: u64) -> Option<Duration> {
         match self.details() {
             CodexErrorDetails::ServerOverloaded
-            | CodexErrorDetails::InvalidRequest(_) => false,
+            | CodexErrorDetails::InvalidRequest(_) => None,
             CodexErrorDetails::Stream(..)
             | CodexErrorDetails::RateLimitExceeded(_)
-            | CodexErrorDetails::ConnectionFailed(_) => true,
+            | CodexErrorDetails::ConnectionFailed(_) => Some(
+                self.server_retry_delay.unwrap_or_else(|| backoff(retry_count)),
+            ),
         }
     }
+}
+''',
+        ),
+        _file(
+            "source_spec.extra.app_server_error_notification",
+            "codex-rs/app-server-protocol/src/protocol/v2/notification.rs",
+            '''
+pub struct ErrorNotification {
+    // Set to true if the error is transient and the app-server process will automatically retry.
+    pub will_retry: bool,
+}
+''',
+        ),
+        _file(
+            "source_spec.extra.app_server_bespoke_events",
+            "codex-rs/app-server/src/bespoke_event_handling.rs",
+            '''
+match msg {
+    EventMsg::StreamError(ev) => ErrorNotification { will_retry: true },
+    EventMsg::Error(ev) => handle_error_notification(ev),
+}
+fn handle_error_notification(error: TurnError) {
+    ErrorNotification { error, will_retry: false };
 }
 ''',
         ),
@@ -201,10 +257,20 @@ def test_runtime_behavior_derives_error_map_and_retry_control() -> None:
     ]
     assert errors["websocket_wrapped_error"]["previous_response_not_found"]["observed"]
     assert errors["api_to_codex_error"]["server_overloaded_api_error"]["observed"]
+    assert errors["codex_error_retryability"]["implementation"] == "retry_delay"
     assert errors["codex_error_retryability"]["table"]["ServerOverloaded"] is False
     assert errors["codex_error_retryability"]["table"]["RateLimitExceeded"] is True
     assert errors["turn_retry_control"]["retryability_gate"]["observed"]
     assert errors["turn_retry_control"]["websocket_to_http_fallback"]["observed"]
+    reconnect = errors["websocket_reconnect_state"]
+    assert reconnect["close_frame"]["service_restart_1012_special_cased"] is False
+    assert reconnect["close_frame"]["close_code_inspected"] is False
+    assert reconnect["turn_state"]["preserved_across_plain_connection_close"] is True
+    assert reconnect["turn_state"]["reset_on_auth_owner_change"] is True
+    retry_surface = result.data["client_retry_surface"]
+    assert retry_surface["will_retry_true_means_app_server_automatic_retry"] is True
+    assert retry_surface["server_overloaded_core_retryable"] is False
+    assert retry_surface["server_overloaded_app_server_will_retry"] is False
 
 
 def test_runtime_behavior_separates_fork_lineage_persistence_and_presentation() -> None:
@@ -220,3 +286,42 @@ def test_runtime_behavior_separates_fork_lineage_persistence_and_presentation() 
     assert fork["axes"]["product_surface"]["side_conversation_forces_ephemeral"]["observed"]
     assert fork["axes"]["product_surface"]["slash_aliases"]["commands"] == ["/side", "/btw"]
     assert fork["axes"]["rewind_prompt_edit"]["uses_fork"]["observed"]
+
+
+
+def test_retryability_legacy_is_retryable_shape_remains_supported() -> None:
+    snapshot = _snapshot()
+    source = snapshot.files["source_spec.extra.response_protocol_error"]
+    current = source.text
+    legacy = current.replace(
+        """pub fn retry_delay(&self, retry_count: u64) -> Option<Duration> {
+        match self.details() {
+            CodexErrorDetails::ServerOverloaded
+            | CodexErrorDetails::InvalidRequest(_) => None,
+            CodexErrorDetails::Stream(..)
+            | CodexErrorDetails::RateLimitExceeded(_)
+            | CodexErrorDetails::ConnectionFailed(_) => Some(
+                self.server_retry_delay.unwrap_or_else(|| backoff(retry_count)),
+            ),
+        }
+    }""",
+        """pub fn is_retryable(&self) -> bool {
+        match self.details() {
+            CodexErrorDetails::ServerOverloaded
+            | CodexErrorDetails::InvalidRequest(_) => false,
+            CodexErrorDetails::Stream(..)
+            | CodexErrorDetails::RateLimitExceeded(_)
+            | CodexErrorDetails::ConnectionFailed(_) => true,
+        }
+    }""",
+    )
+    files = dict(snapshot.files)
+    files[source.spec_id] = _file(source.spec_id, source.selected_path, legacy)
+    result = RuntimeBehaviorExtractor().extract(
+        SourceSnapshot(snapshot.revision, files),
+        DiagnosticCollector(),
+    )
+    retryability = result.data["responses"]["codex_error_retryability"]
+    assert retryability["implementation"] == "is_retryable"
+    assert retryability["table"]["ServerOverloaded"] is False
+    assert retryability["table"]["RateLimitExceeded"] is True
