@@ -93,7 +93,10 @@ Feature::UnboundedConnectionRetries;
 CodexErrorDetails::ConnectionFailed;
 try_switch_fallback_transport();
 "Falling back from WebSockets to HTTPS transport";
-let delay = err.retry_delay().unwrap_or_else(|| backoff(retry_count));
+let retry_count = retry_state.retries.saturating_add(1);
+let Some(delay) = err.retry_delay(retry_count) else {
+    return Err(err);
+};
 let report_error = retry_count > 1 || cfg!(debug_assertions) || !responses_websocket_enabled();
 ''',
         ),
