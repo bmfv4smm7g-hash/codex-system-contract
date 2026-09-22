@@ -1,11 +1,11 @@
 {
   "counts": {
     "base": 16,
-    "extra": 120,
-    "optional": 146,
+    "extra": 122,
+    "optional": 148,
     "required": 16,
     "surface": 26,
-    "total": 162
+    "total": 164
   },
   "schema_version": "1.0.0",
   "sources": {
@@ -96,11 +96,14 @@
         "build_ws_client_metadata",
         "use_responses_lite",
         "ResponseItem::AdditionalTools",
-        "add_responses_lite_header"
+        "add_responses_lite_header",
+        "turn_state: Arc::new(OnceLock::new())",
+        "client_metadata.insert(X_CODEX_TURN_STATE_HEADER"
       ],
       "extractor_ids": [
         "extractor.responses_lite",
-        "extractor.responses_request"
+        "extractor.responses_request",
+        "extractor.runtime_behavior"
       ],
       "group": "base",
       "id": "source_spec.base.core",
@@ -112,7 +115,8 @@
       "roles": [
         "legacy_base",
         "responses_request",
-        "responses_lite"
+        "responses_lite",
+        "runtime_behavior"
       ]
     },
     "source_spec.base.default_client": {
@@ -315,6 +319,26 @@
         "legacy_extra"
       ]
     },
+    "source_spec.extra.app_server_bespoke_events": {
+      "expected_symbols": [
+        "EventMsg::StreamError",
+        "will_retry: true",
+        "will_retry: false"
+      ],
+      "extractor_ids": [
+        "extractor.runtime_behavior"
+      ],
+      "group": "extra",
+      "id": "source_spec.extra.app_server_bespoke_events",
+      "legacy_key": "app_server_bespoke_events",
+      "path_candidates": [
+        "codex-rs/app-server/src/bespoke_event_handling.rs"
+      ],
+      "required": false,
+      "roles": [
+        "runtime_behavior"
+      ]
+    },
     "source_spec.extra.app_server_common": {
       "expected_symbols": [
         "client_request_definitions",
@@ -334,6 +358,26 @@
       "roles": [
         "legacy_extra",
         "app_server_rpc"
+      ]
+    },
+    "source_spec.extra.app_server_error_notification": {
+      "expected_symbols": [
+        "pub struct ErrorNotification",
+        "will_retry",
+        "automatically retry"
+      ],
+      "extractor_ids": [
+        "extractor.runtime_behavior"
+      ],
+      "group": "extra",
+      "id": "source_spec.extra.app_server_error_notification",
+      "legacy_key": "app_server_error_notification",
+      "path_candidates": [
+        "codex-rs/app-server-protocol/src/protocol/v2/notification.rs"
+      ],
+      "required": false,
+      "roles": [
+        "runtime_behavior"
       ]
     },
     "source_spec.extra.app_server_item": {
@@ -2208,7 +2252,7 @@
     "source_spec.extra.response_protocol_error": {
       "expected_symbols": [
         "pub enum CodexErrorDetails",
-        "pub fn is_retryable",
+        "pub fn retry_delay",
         "ServerOverloaded",
         "RateLimitExceeded"
       ],
@@ -2304,9 +2348,9 @@
     },
     "source_spec.extra.responses_transport_retry": {
       "expected_symbols": [
-        "handle_retryable_response_stream_error",
         "try_switch_fallback_transport",
-        "Falling back from WebSockets to HTTPS transport"
+        "Falling back from WebSockets to HTTPS transport",
+        "retry_state"
       ],
       "extractor_ids": [
         "extractor.responses_request"
