@@ -17,6 +17,9 @@ from typing import Any
 from ..diagnostics import DiagnosticCollector
 from ..models import SourceFile, SourceSnapshot
 from .registry import ExtractorResult, register_extractor
+from .runtime_behavior_responses import app_server_retry_surface
+from .runtime_behavior_responses import codex_error_retryability
+from .runtime_behavior_responses import turn_state_reconnect
 
 
 EXTRACTOR_ID = "extractor.runtime_behavior"
@@ -29,6 +32,8 @@ RESPONSES_RETRY = "source_spec.extra.responses_transport_retry"
 PROMPT_TURN = "source_spec.extra.prompt_turn"
 API_BRIDGE = "source_spec.extra.response_api_bridge"
 PROTOCOL_ERROR = "source_spec.extra.response_protocol_error"
+APP_SERVER_ERROR_NOTIFICATION = "source_spec.extra.app_server_error_notification"
+APP_SERVER_BESPOKE_EVENTS = "source_spec.extra.app_server_bespoke_events"
 THREAD_PROTOCOL = "source_spec.extra.app_server_thread"
 THREAD_PROCESSOR = "source_spec.extra.app_server_thread_processor"
 THREAD_MANAGER = "source_spec.extra.app_server_thread_manager"
@@ -45,6 +50,8 @@ SOURCE_IDS = (
     PROMPT_TURN,
     API_BRIDGE,
     PROTOCOL_ERROR,
+    APP_SERVER_ERROR_NOTIFICATION,
+    APP_SERVER_BESPOKE_EVENTS,
     THREAD_PROTOCOL,
     THREAD_PROCESSOR,
     THREAD_MANAGER,
@@ -117,46 +124,6 @@ def _struct_fields(source: SourceFile | None, name: str) -> list[str]:
     )
 
 
-def _codex_error_retryability(source: SourceFile | None) -> dict[str, Any]:
-    if source is None:
-        return {"observed": False, "retryable": [], "terminal": []}
-
-    body = _balanced_body(
-        source.text,
-        r"pub\s+fn\s+retry_delay\s*\(&self,\s*retry_count:\s*u64\)\s*->\s*Option<Duration>",
-    )
-    implementation = "retry_delay"
-    value_pattern = r"=>\s*(None|Some\s*\()"
-    if body is None:
-        body = _balanced_body(source.text, r"pub\s+fn\s+is_retryable\s*\(&self\)\s*->\s*bool")
-        implementation = "is_retryable"
-        value_pattern = r"=>\s*(true|false)\s*,"
-    if body is None:
-        return {"observed": False, "retryable": [], "terminal": []}
-
-    table: dict[str, bool] = {}
-    cursor = 0
-    for match in re.finditer(value_pattern, body):
-        arm = body[cursor : match.start()]
-        value = match.group(1) in {"true"} or match.group(1).startswith("Some")
-        for variant in re.findall(r"CodexErrorDetails::([A-Za-z_][A-Za-z0-9_]*)", arm):
-            table[variant] = value
-        cursor = match.end()
-
-    return {
-        "observed": bool(table),
-        "implementation": implementation,
-        "retryable": sorted(name for name, retryable in table.items() if retryable),
-        "terminal": sorted(name for name, retryable in table.items() if not retryable),
-        "table": {name: table[name] for name in sorted(table)},
-        "source_semantics": (
-            "CodexErr::retry_delay(retry_count) Option table"
-            if implementation == "retry_delay"
-            else "legacy CodexErr::is_retryable match table"
-        ),
-    }
-
-
 def _api_bridge_map(source: SourceFile | None) -> dict[str, Any]:
     return {
         "retryable_api_error": _rule(
@@ -201,40 +168,6 @@ def _api_bridge_map(source: SourceFile | None) -> dict[str, Any]:
             source_semantics="HTTP 429 is further classified for usage/quota conditions; otherwise RetryLimit",
             default_codex_error="RetryLimit",
         ),
-    }
-
-
-def _turn_state_reconnect(core: SourceFile | None, ws: SourceFile | None) -> dict[str, Any]:
-    ws_body = (
-        _balanced_body(ws.text, r"async\s+fn\s+run_websocket_response_stream\b")
-        if ws is not None
-        else None
-    )
-    generic_close = bool(
-        ws_body
-        and "Message::Close(_)" in ws_body
-        and "websocket closed by server before response.completed" in ws_body
-    )
-    close_code_inspected = bool(ws_body and ("frame.code" in ws_body or "close.code" in ws_body))
-    core_text = core.text if core is not None else ""
-    owner_reset = "if owner_changed" in core_text and "self.turn_state = Arc::new(OnceLock::new())" in core_text
-    reconnect_detected = "conn.is_closed().await" in core_text
-    replayed = "client_metadata.insert(X_CODEX_TURN_STATE_HEADER" in core_text
-    return {
-        "close_frame": {
-            "observed": generic_close,
-            "close_code_inspected": close_code_inspected,
-            "service_restart_1012_special_cased": bool(ws_body and "1012" in ws_body),
-            "api_error": "Stream" if generic_close else None,
-        },
-        "turn_state": {
-            "fresh_per_logical_turn": "turn_state: Arc::new(OnceLock::new())" in core_text,
-            "replayed_in_websocket_client_metadata": replayed,
-            "physical_reconnect_detected": reconnect_detected,
-            "preserved_across_plain_connection_close": reconnect_detected and replayed,
-            "reset_on_auth_owner_change": owner_reset,
-            "source_semantics": "WebSocket session state is reset independently from the turn-scoped OnceLock",
-        },
     }
 
 
@@ -357,8 +290,8 @@ def _responses_error_map(
             ),
         },
         "api_to_codex_error": _api_bridge_map(api_bridge),
-        "codex_error_retryability": _codex_error_retryability(protocol_error),
-        "websocket_reconnect_state": _turn_state_reconnect(core, ws),
+        "codex_error_retryability": codex_error_retryability(protocol_error),
+        "websocket_reconnect_state": turn_state_reconnect(core, ws),
         "turn_retry_control": {
             "retryability_gate": (
                 _rule(
@@ -568,6 +501,11 @@ class RuntimeBehaviorExtractor:
                 sources[API_BRIDGE],
                 sources[PROTOCOL_ERROR],
                 sources[CORE],
+            ),
+            "client_retry_surface": app_server_retry_surface(
+                sources[APP_SERVER_ERROR_NOTIFICATION],
+                sources[APP_SERVER_BESPOKE_EVENTS],
+                codex_error_retryability(sources[PROTOCOL_ERROR]),
             ),
             "fork": _fork_behavior(
                 sources[THREAD_PROTOCOL],
