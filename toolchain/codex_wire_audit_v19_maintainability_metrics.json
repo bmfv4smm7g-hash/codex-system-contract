@@ -1,39 +1,31 @@
 {
   "active_implementation": {
     "function_count": 724,
-    "functions_over_200_lines": [
-      {
-        "cyclomatic_complexity": 16,
-        "file": "codex_wire_audit/extractors/responses_protocol.py",
-        "line_count": 203,
-        "qualified_name": "ResponsesRequestExtractor.extract",
-        "start_line": 176
-      }
-    ],
+    "functions_over_200_lines": [],
     "functions_over_complexity_45": [],
     "internal_import_cycles": [],
     "internal_import_edge_count": 222,
     "largest_function": {
-      "cyclomatic_complexity": 16,
-      "file": "codex_wire_audit/extractors/responses_protocol.py",
-      "line_count": 203,
-      "qualified_name": "ResponsesRequestExtractor.extract",
-      "start_line": 176
+      "cyclomatic_complexity": 36,
+      "file": "codex_wire_audit/extractors/app_server_history_mutation.py",
+      "line_count": 200,
+      "qualified_name": "build_history_mutation",
+      "start_line": 148
     },
     "largest_functions": [
-      {
-        "cyclomatic_complexity": 16,
-        "file": "codex_wire_audit/extractors/responses_protocol.py",
-        "line_count": 203,
-        "qualified_name": "ResponsesRequestExtractor.extract",
-        "start_line": 176
-      },
       {
         "cyclomatic_complexity": 36,
         "file": "codex_wire_audit/extractors/app_server_history_mutation.py",
         "line_count": 200,
         "qualified_name": "build_history_mutation",
         "start_line": 148
+      },
+      {
+        "cyclomatic_complexity": 16,
+        "file": "codex_wire_audit/extractors/responses_protocol.py",
+        "line_count": 200,
+        "qualified_name": "ResponsesRequestExtractor.extract",
+        "start_line": 176
       },
       {
         "cyclomatic_complexity": 14,
@@ -166,12 +158,12 @@
     ],
     "largest_module": {
       "file": "codex_wire_audit/extractors/responses_protocol.py",
-      "line_count": 595
+      "line_count": 592
     },
     "largest_modules": [
       {
         "file": "codex_wire_audit/extractors/responses_protocol.py",
-        "line_count": 595
+        "line_count": 592
       },
       {
         "file": "codex_wire_audit/metadata_history.py",
@@ -221,44 +213,36 @@
       "qualified_name": "verify_git_source",
       "start_line": 75
     },
-    "physical_line_count": 21929,
-    "source_sha256": "5a352cd1c936e2e028fd6d81d768374c0414d2e4c75e47f68f866c3cc971b88b"
+    "physical_line_count": 21926,
+    "source_sha256": "784a0335dc461c4fcf3acca99bb077efe773a8b95550e5fee94683a354512d0f"
   },
   "active_package": {
     "function_count": 589,
-    "functions_over_200_lines": [
-      {
-        "cyclomatic_complexity": 16,
-        "file": "codex_wire_audit/extractors/responses_protocol.py",
-        "line_count": 203,
-        "qualified_name": "ResponsesRequestExtractor.extract",
-        "start_line": 176
-      }
-    ],
+    "functions_over_200_lines": [],
     "functions_over_complexity_45": [],
     "internal_import_cycles": [],
     "internal_import_edge_count": 181,
     "largest_function": {
-      "cyclomatic_complexity": 16,
-      "file": "codex_wire_audit/extractors/responses_protocol.py",
-      "line_count": 203,
-      "qualified_name": "ResponsesRequestExtractor.extract",
-      "start_line": 176
+      "cyclomatic_complexity": 36,
+      "file": "codex_wire_audit/extractors/app_server_history_mutation.py",
+      "line_count": 200,
+      "qualified_name": "build_history_mutation",
+      "start_line": 148
     },
     "largest_functions": [
-      {
-        "cyclomatic_complexity": 16,
-        "file": "codex_wire_audit/extractors/responses_protocol.py",
-        "line_count": 203,
-        "qualified_name": "ResponsesRequestExtractor.extract",
-        "start_line": 176
-      },
       {
         "cyclomatic_complexity": 36,
         "file": "codex_wire_audit/extractors/app_server_history_mutation.py",
         "line_count": 200,
         "qualified_name": "build_history_mutation",
         "start_line": 148
+      },
+      {
+        "cyclomatic_complexity": 16,
+        "file": "codex_wire_audit/extractors/responses_protocol.py",
+        "line_count": 200,
+        "qualified_name": "ResponsesRequestExtractor.extract",
+        "start_line": 176
       },
       {
         "cyclomatic_complexity": 14,
@@ -391,12 +375,12 @@
     ],
     "largest_module": {
       "file": "codex_wire_audit/extractors/responses_protocol.py",
-      "line_count": 595
+      "line_count": 592
     },
     "largest_modules": [
       {
         "file": "codex_wire_audit/extractors/responses_protocol.py",
-        "line_count": 595
+        "line_count": 592
       },
       {
         "file": "codex_wire_audit/metadata_history.py",
@@ -446,8 +430,8 @@
       "qualified_name": "verify_git_source",
       "start_line": 75
     },
-    "physical_line_count": 18582,
-    "source_sha256": "c63fc5f07a7d544167c28d5ceb31e436daa5faebdb7ca9b6f4a371806f0dab6f"
+    "physical_line_count": 18579,
+    "source_sha256": "106083633f2f4ec6b12becbe5f6a0863b149e1ffe8f45c127dc3c07879db672e"
   },
   "active_release_tools": {
     "function_count": 135,
@@ -667,10 +651,10 @@
     "source_sha256": "3fb558498e2dced7616e7476c166ca592f0165702bfe295daf110caffe425b3d"
   },
   "deltas": {
-    "active_functions_over_200": 1,
+    "active_functions_over_200": 0,
     "active_modules_over_600": 0,
-    "largest_function_line_reduction_percent": 83.8,
-    "largest_module_line_reduction_percent": 88.1,
+    "largest_function_line_reduction_percent": 84.1,
+    "largest_module_line_reduction_percent": 88.2,
     "v10_functions_over_200": 16,
     "v10_modules_over_600": 3
   },
@@ -682,7 +666,7 @@
     "max_module_fan_out": 10,
     "passes": {
       "cyclomatic_complexity": true,
-      "function_size": false,
+      "function_size": true,
       "import_cycles": true,
       "module_fan_out": true,
       "module_size": true
