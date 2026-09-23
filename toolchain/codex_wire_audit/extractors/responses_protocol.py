@@ -279,10 +279,7 @@ class ResponsesRequestExtractor:
             cookie_store=sources[COOKIE_STORE],
         )
         complete &= diagnostics_complete
-        cookie_complete, websocket_cookie_affinity = classify_websocket_cookie_affinity(
-            diagnostics=diagnostics, extractor_id=REQUEST_ID,
-            websocket_client=sources[WSS_CLIENT], cookie_store=sources[COOKIE_STORE],
-        )
+        cookie_complete, websocket_cookie_affinity = classify_websocket_cookie_affinity(diagnostics=diagnostics, extractor_id=REQUEST_ID, websocket_client=sources[WSS_CLIENT], cookie_store=sources[COOKIE_STORE])
         complete &= cookie_complete
 
         http_fields = _struct_fields(common.text, "ResponsesApiRequest")
