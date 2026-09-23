@@ -116,6 +116,8 @@ WebSocket data frames
 
 A cookie returned with the successful upgrade cannot change the routing of that
 already-established socket; it only affects later matching requests/reconnects.
+Codex does not assign a fixed routing-cookie TTL here; expiry remains an upstream
+`Set-Cookie` attribute interpreted by the shared cookie jar.
 The runtime contract is revision-sensitive because older Codex revisions had the
 HTTP cookie jar without the WebSocket handshake bridge.
 
