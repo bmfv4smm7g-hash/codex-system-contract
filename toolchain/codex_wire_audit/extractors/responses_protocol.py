@@ -15,18 +15,9 @@ from ..diagnostics import DiagnosticCollector
 from ..models import SourceFile, SourceSnapshot
 from .registry import ExtractorResult, register_extractor
 from .responses_transport import (
-    COOKIE_STORE,
-    DEFAULT_CLIENT,
-    HTTP_CLIENT,
-    PROVIDER,
-    RETRY,
-    SESSION,
-    STARTUP,
-    WSS_CLIENT,
-    build_transport_lifecycle,
-    classify_http_response_diagnostics,
-    classify_websocket_cookie_affinity,
-    validate_transport_sources,
+    COOKIE_STORE, DEFAULT_CLIENT, HTTP_CLIENT, PROVIDER, RETRY, SESSION, STARTUP, WSS_CLIENT,
+    build_transport_lifecycle, classify_http_response_diagnostics,
+    classify_websocket_cookie_affinity, validate_transport_sources,
 )
 
 REQUEST_ID = "extractor.responses_request"
@@ -289,10 +280,8 @@ class ResponsesRequestExtractor:
         )
         complete &= diagnostics_complete
         cookie_complete, websocket_cookie_affinity = classify_websocket_cookie_affinity(
-            diagnostics=diagnostics,
-            extractor_id=REQUEST_ID,
-            websocket_client=sources[WSS_CLIENT],
-            cookie_store=sources[COOKIE_STORE],
+            diagnostics=diagnostics, extractor_id=REQUEST_ID,
+            websocket_client=sources[WSS_CLIENT], cookie_store=sources[COOKIE_STORE],
         )
         complete &= cookie_complete
 
