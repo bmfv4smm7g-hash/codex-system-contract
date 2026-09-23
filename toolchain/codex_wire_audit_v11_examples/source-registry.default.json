@@ -1,11 +1,11 @@
 {
   "counts": {
     "base": 16,
-    "extra": 120,
-    "optional": 146,
+    "extra": 121,
+    "optional": 147,
     "required": 16,
     "surface": 26,
-    "total": 162
+    "total": 163
   },
   "schema_version": "1.0.0",
   "sources": {
@@ -2355,6 +2355,25 @@
       "legacy_key": "responses_transport_startup",
       "path_candidates": [
         "codex-rs/core/src/session_startup_prewarm.rs"
+      ],
+      "required": false,
+      "roles": [
+        "responses_request"
+      ]
+    },
+    "source_spec.extra.responses_websocket_client": {
+      "expected_symbols": [
+        "WebSocketConnector",
+        "connect_with_route"
+      ],
+      "extractor_ids": [
+        "extractor.responses_request"
+      ],
+      "group": "extra",
+      "id": "source_spec.extra.responses_websocket_client",
+      "legacy_key": "responses_websocket_client",
+      "path_candidates": [
+        "codex-rs/websocket-client/src/lib.rs"
       ],
       "required": false,
       "roles": [
