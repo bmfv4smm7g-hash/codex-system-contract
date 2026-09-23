@@ -223,6 +223,7 @@ def classify_websocket_cookie_affinity(
 ) -> tuple[bool, dict[str, Any]]:
     """Classify revision-sensitive ChatGPT routing-cookie behavior around the WS handshake."""
 
+    # Cookie and Set-Cookie are HTTP Upgrade handshake headers; they are not WebSocket data frames.
     websocket_tokens = (
         "!request.headers().contains_key(COOKIE)",
         "chatgpt_cookie_header(&uri)",
