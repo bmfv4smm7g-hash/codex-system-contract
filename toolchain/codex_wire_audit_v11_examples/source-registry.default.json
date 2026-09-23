@@ -1,11 +1,11 @@
 {
   "counts": {
     "base": 16,
-    "extra": 120,
-    "optional": 146,
+    "extra": 123,
+    "optional": 149,
     "required": 16,
     "surface": 26,
-    "total": 162
+    "total": 165
   },
   "schema_version": "1.0.0",
   "sources": {
@@ -2278,6 +2278,62 @@
       "required": false,
       "roles": [
         "responses_request"
+      ]
+    },
+    "source_spec.extra.responses_server_app_model_protocol": {
+      "expected_symbols": [
+        "pub struct Model"
+      ],
+      "extractor_ids": [
+        "extractor.responses_server_response"
+      ],
+      "group": "extra",
+      "id": "source_spec.extra.responses_server_app_model_protocol",
+      "legacy_key": "responses_server_app_model_protocol",
+      "path_candidates": [
+        "codex-rs/app-server-protocol/src/protocol/v2/model.rs"
+      ],
+      "required": false,
+      "roles": [
+        "responses_server_response"
+      ]
+    },
+    "source_spec.extra.responses_server_model_protocol": {
+      "expected_symbols": [
+        "pub struct ModelInfo",
+        "comp_hash"
+      ],
+      "extractor_ids": [
+        "extractor.responses_server_response"
+      ],
+      "group": "extra",
+      "id": "source_spec.extra.responses_server_model_protocol",
+      "legacy_key": "responses_server_model_protocol",
+      "path_candidates": [
+        "codex-rs/protocol/src/openai_models.rs"
+      ],
+      "required": false,
+      "roles": [
+        "responses_server_response"
+      ]
+    },
+    "source_spec.extra.responses_server_prewarm_turn_context": {
+      "expected_symbols": [
+        "NewTurnContextOptions",
+        "new_startup_prewarm_turn_from_configuration"
+      ],
+      "extractor_ids": [
+        "extractor.responses_server_response"
+      ],
+      "group": "extra",
+      "id": "source_spec.extra.responses_server_prewarm_turn_context",
+      "legacy_key": "responses_server_prewarm_turn_context",
+      "path_candidates": [
+        "codex-rs/core/src/session/turn_context.rs"
+      ],
+      "required": false,
+      "roles": [
+        "responses_server_response"
       ]
     },
     "source_spec.extra.responses_transport_provider": {
