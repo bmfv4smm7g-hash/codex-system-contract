@@ -11,6 +11,7 @@
     "direction",
     "effective_model",
     "models_catalog_invalidation",
+    "model_capability_fingerprint",
     "server_response_channels",
     "request_response_boundary",
     "evidence",
@@ -22,7 +23,7 @@
       "const": "https://schemas.codex-system-contract.invalid/responses/responses-server-response-semantics-v1.schema.json"
     },
     "schema_version": {
-      "const": "1.2.0"
+      "const": "1.3.0"
     },
     "ownership": {
       "$ref": "#/$defs/ownership"
@@ -315,7 +316,12 @@
         "turn_dispatch",
         "models_manager",
         "models_endpoint",
-        "model_provider_models"
+        "model_provider_models",
+        "core_client",
+        "startup_prewarm",
+        "model_protocol",
+        "app_model_protocol",
+        "prewarm_turn_context"
       ],
       "additionalProperties": {
         "$ref": "#/$defs/evidence"
@@ -327,6 +333,127 @@
     "semantic_digest": {
       "type": "string",
       "pattern": "^[0-9a-f]{64}$"
+    },
+    "model_capability_fingerprint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "catalog_schema_variant",
+        "catalog_capability_path",
+        "catalog_capability_present",
+        "legacy_catalog_metadata_absent",
+        "slug_is_stable_identity",
+        "capability_fingerprint_use",
+        "gpt6_interpretation",
+        "comp_hash",
+        "request_projection",
+        "startup_prewarm"
+      ],
+      "properties": {
+        "catalog_schema_variant": {
+          "enum": [
+            "access_programs_metadata",
+            "legacy_without_access_programs_metadata",
+            "unknown"
+          ]
+        },
+        "catalog_capability_path": {
+          "const": "models[].available_access_programs.cyber"
+        },
+        "catalog_capability_present": {
+          "type": "boolean"
+        },
+        "legacy_catalog_metadata_absent": {
+          "type": "boolean"
+        },
+        "slug_is_stable_identity": {
+          "const": false
+        },
+        "capability_fingerprint_use": {
+          "type": "string",
+          "minLength": 1
+        },
+        "gpt6_interpretation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "comp_hash": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "meaning",
+            "unique_model_identity"
+          ],
+          "properties": {
+            "path": {
+              "const": "models[].comp_hash"
+            },
+            "meaning": {
+              "type": "string",
+              "minLength": 1
+            },
+            "unique_model_identity": {
+              "const": false
+            }
+          }
+        },
+        "request_projection": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "field",
+            "source",
+            "auth_gate",
+            "is_catalog_capability"
+          ],
+          "properties": {
+            "field": {
+              "const": "access_programs.cyber"
+            },
+            "source": {
+              "type": "string",
+              "minLength": 1
+            },
+            "auth_gate": {
+              "type": "string",
+              "minLength": 1
+            },
+            "is_catalog_capability": {
+              "const": false
+            }
+          }
+        },
+        "startup_prewarm": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "request_kind",
+            "turn_options",
+            "cyber_access_program",
+            "access_programs_serialized",
+            "identity_implication"
+          ],
+          "properties": {
+            "request_kind": {
+              "const": "CodexResponsesRequestKind::Prewarm"
+            },
+            "turn_options": {
+              "const": "NewTurnContextOptions::default()"
+            },
+            "cyber_access_program": {
+              "type": "null"
+            },
+            "access_programs_serialized": {
+              "const": false
+            },
+            "identity_implication": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
     }
   },
   "$defs": {
