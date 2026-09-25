@@ -7,29 +7,41 @@ from typing import Any
 
 from ..diagnostics import DiagnosticCollector
 from ..models import SourceFile, SourceSnapshot
+from .responses_server_catalog import capability_fingerprint_contract
 from .responses_server_catalog import models_catalog_contract
+from .responses_server_catalog import validate_capability_fingerprint_sources
 from .responses_server_catalog import validate_catalog_sources
 from .registry import ExtractorResult, register_extractor
 
 EXTRACTOR_ID = "extractor.responses_server_response"
-SCHEMA_VERSION = "1.2.0"
+SCHEMA_VERSION = "1.3.0"
 SCHEMA = "https://schemas.codex-system-contract.invalid/responses/responses-server-response-semantics-v1.schema.json"
 
 COMMON = "source_spec.base.common"
+CORE = "source_spec.base.core"
 SSE = "source_spec.base.response_sse"
 WS = "source_spec.base.ws"
 TURN = "source_spec.extra.prompt_turn"
 MODELS_MANAGER = "source_spec.extra.models_manager"
 MODELS_ENDPOINT = "source_spec.surface.models_endpoint"
 MODEL_PROVIDER_MODELS = "source_spec.surface.model_provider_models"
+STARTUP = "source_spec.extra.responses_transport_startup"
+MODEL_PROTOCOL = "source_spec.extra.responses_server_model_protocol"
+APP_MODEL_PROTOCOL = "source_spec.extra.responses_server_app_model_protocol"
+PREWARM_TURN_CONTEXT = "source_spec.extra.responses_server_prewarm_turn_context"
 SOURCE_SPECS = (
     COMMON,
+    CORE,
     SSE,
     WS,
     TURN,
     MODELS_MANAGER,
     MODELS_ENDPOINT,
     MODEL_PROVIDER_MODELS,
+    STARTUP,
+    MODEL_PROTOCOL,
+    APP_MODEL_PROTOCOL,
+    PREWARM_TURN_CONTEXT,
 )
 
 
@@ -296,6 +308,7 @@ def _build_body(
     sources: dict[str, SourceFile],
     payload_model_consulted: bool,
     catalog_variant: str,
+    capability_variant: str,
 ) -> dict[str, Any]:
     return {
         "$schema": SCHEMA,
@@ -306,6 +319,7 @@ def _build_body(
                 "effective/resolved model observation and normalization",
                 "HTTP/SSE versus WebSocket response-channel distinctions",
                 "X-Models-Etag invalidation and model-catalog refresh semantics",
+                "model capability fingerprints and access-program discovery/request boundaries",
             ],
             "does_not_own": [
                 "client_metadata construction",
@@ -317,6 +331,7 @@ def _build_body(
         "direction": "server_to_client",
         "effective_model": _effective_model_contract(payload_model_consulted),
         "models_catalog_invalidation": models_catalog_contract(catalog_variant),
+        "model_capability_fingerprint": capability_fingerprint_contract(capability_variant),
         "server_response_channels": _server_channels_contract(),
         "request_response_boundary": {
             "requested_model": "client request body model",
@@ -326,12 +341,17 @@ def _build_body(
         },
         "evidence": {
             "common": _evidence(sources[COMMON], "ResponseEvent::ServerModel/ModelsEtag"),
+            "core_client": _evidence(sources[CORE], "Responses access_programs request projection"),
             "sse": _evidence(sources[SSE], "spawn_response_stream/ResponsesStreamEvent::response_model"),
             "websocket": _evidence(sources[WS], "connect_websocket/run_websocket_response_stream"),
             "turn_dispatch": _evidence(sources[TURN], "ResponseEvent::ModelsEtag -> refresh_if_new_etag"),
             "models_manager": _evidence(sources[MODELS_MANAGER], "refresh_if_new_etag/fetch_and_update_models"),
             "models_endpoint": _evidence(sources[MODELS_ENDPOINT], "ModelsClient::request_url/list_models"),
             "model_provider_models": _evidence(sources[MODEL_PROVIDER_MODELS], "OpenAiModelsEndpoint::list_models"),
+            "startup_prewarm": _evidence(sources[STARTUP], "schedule_startup_prewarm_inner/prewarm_websocket"),
+            "model_protocol": _evidence(sources[MODEL_PROTOCOL], "ModelInfo capability metadata"),
+            "app_model_protocol": _evidence(sources[APP_MODEL_PROTOCOL], "Model.availableAccessPrograms projection"),
+            "prewarm_turn_context": _evidence(sources[PREWARM_TURN_CONTEXT], "NewTurnContextOptions::default"),
         },
     }
 
@@ -355,13 +375,23 @@ class ResponsesServerResponseExtractor:
             diagnostics,
         )
         complete &= catalog_complete
+        capability_complete, capability_variant = validate_capability_fingerprint_sources(
+            sources[MODEL_PROTOCOL],
+            sources[APP_MODEL_PROTOCOL],
+            sources[CORE],
+            sources[STARTUP],
+            sources[TURN],
+            sources[PREWARM_TURN_CONTEXT],
+            diagnostics,
+        )
+        complete &= capability_complete
         authority_ok, payload_model_consulted = _check_response_model_authority(
             sources[SSE], diagnostics
         )
         complete &= authority_ok
         complete &= _check_manager_body(sources[MODELS_MANAGER], diagnostics)
         return _result(
-            _build_body(sources, payload_model_consulted, catalog_variant),
+            _build_body(sources, payload_model_consulted, catalog_variant, capability_variant),
             complete,
         )
 

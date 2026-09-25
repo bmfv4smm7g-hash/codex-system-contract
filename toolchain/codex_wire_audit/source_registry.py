@@ -297,6 +297,9 @@ _RESPONSE_EVENT_SPECS = (
 
 _RESPONSES_SERVER_RESPONSE_SPECS = (
     ("source_spec.extra.models_manager", "models_manager", "codex-rs/models-manager/src/manager.rs", ("refresh_if_new_etag", "fetch_and_update_models", "RefreshStrategy::Online", "ModelsCacheEntry")),
+    ("source_spec.extra.responses_server_model_protocol", "responses_server_model_protocol", "codex-rs/protocol/src/openai_models.rs", ("pub struct ModelInfo", "comp_hash")),
+    ("source_spec.extra.responses_server_app_model_protocol", "responses_server_app_model_protocol", "codex-rs/app-server-protocol/src/protocol/v2/model.rs", ("pub struct Model",)),
+    ("source_spec.extra.responses_server_prewarm_turn_context", "responses_server_prewarm_turn_context", "codex-rs/core/src/session/turn_context.rs", ("NewTurnContextOptions", "new_startup_prewarm_turn_from_configuration")),
 )
 
 _RUNTIME_BEHAVIOR_SPECS = (

@@ -81,7 +81,7 @@
         "file": "codex_wire_audit/extractors/responses_server_catalog.py",
         "line_count": 150,
         "qualified_name": "validate_catalog_sources",
-        "start_line": 77
+        "start_line": 234
       }
     ],
     "largest_functions_by_complexity": [
@@ -291,7 +291,7 @@
         "file": "codex_wire_audit/extractors/responses_server_catalog.py",
         "line_count": 150,
         "qualified_name": "validate_catalog_sources",
-        "start_line": 77
+        "start_line": 234
       },
       {
         "cyclomatic_complexity": 30,
@@ -415,8 +415,8 @@
         "line_count": 480
       },
       {
-        "file": "codex_wire_audit/cli.py",
-        "line_count": 449
+        "file": "codex_wire_audit/extractors/responses_server_catalog.py",
+        "line_count": 468
       }
     ],
     "maximum_module_fan_out": 10,
@@ -432,6 +432,8 @@
     },
     "physical_line_count": 18658,
     "source_sha256": "5cd001d58aef7a77f9fb48af71f6f53a4d2350b062d0f57e9621810c37a068c2"
+    "physical_line_count": 18666,
+    "source_sha256": "bee5173878aaac944396be587c06ca707c59fc0bfddd452663b8475ac14ba19b"
   },
   "active_release_tools": {
     "function_count": 135,

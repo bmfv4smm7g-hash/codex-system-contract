@@ -15,12 +15,12 @@ The enforced scope now includes both the installable package and the release scr
 Largest combined module: **`codex_wire_audit/extractors/responses_protocol.py`** (595 lines). Largest combined function: **`build_history_mutation`** (200 lines).
 
 ## Generated maintenance assets
-
 - Source registry entries: **164** (16 required, 148 optional).
 - Strict schemas: **33**, including **1** release-spec schema.
 - Metadata history: **7 keys**, **19 states**, **10 versions**, **9 transitions**.
 - Regression test methods: **320**.
 - Combined source digest: `ed6766d0a7b0eeec4ca86ff28ddaa613d13ae76a036d492e3849005ed1946899`.
+
 
 ## Enforced budgets
 
