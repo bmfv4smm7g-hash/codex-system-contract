@@ -281,7 +281,7 @@ _RESPONSES_REQUEST_SPECS = (
     ("source_spec.extra.responses_chatgpt_cookie_store", "responses_chatgpt_cookie_store", "codex-rs/http-client/src/chatgpt_cloudflare_cookies.rs", ("is_chatgpt_cookie_url", "is_allowed_cloudflare_set_cookie_header", "CookieStore")),
     ("source_spec.extra.responses_transport_startup", "responses_transport_startup", "codex-rs/core/src/session_startup_prewarm.rs", ("schedule_startup_prewarm", "CodexResponsesRequestKind::Prewarm", "prewarm_websocket")),
     ("source_spec.extra.responses_transport_session", "responses_transport_session", "codex-rs/core/src/session/session.rs", ("schedule_startup_prewarm", "record_initial_history")),
-    ("source_spec.extra.responses_transport_retry", "responses_transport_retry", "codex-rs/core/src/responses_retry.rs", ("handle_retryable_response_stream_error", "try_switch_fallback_transport", "Falling back from WebSockets to HTTPS transport")),
+    ("source_spec.extra.responses_transport_retry", "responses_transport_retry", "codex-rs/core/src/responses_retry.rs", ("try_switch_fallback_transport", "Falling back from WebSockets to HTTPS transport", "retry_state")),
     ("source_spec.extra.responses_transport_provider", "responses_transport_provider", "codex-rs/codex-api/src/provider.rs", ("websocket_url_for_path", "http", "https", "ws", "wss")),
 )
 
@@ -303,8 +303,11 @@ _RESPONSES_SERVER_RESPONSE_SPECS = (
 )
 
 _RUNTIME_BEHAVIOR_SPECS = (
+    ("source_spec.base.core", "core", "codex-rs/core/src/client.rs", ("turn_state: Arc::new(OnceLock::new())", "client_metadata.insert(X_CODEX_TURN_STATE_HEADER")),
     ("source_spec.extra.response_api_bridge", "response_api_bridge", "codex-rs/codex-api/src/api_bridge.rs", ("map_api_error", "server_is_overloaded", "slow_down", "StatusCode::TOO_MANY_REQUESTS")),
-    ("source_spec.extra.response_protocol_error", "response_protocol_error", "codex-rs/protocol/src/error.rs", ("pub enum CodexErrorDetails", "pub fn is_retryable", "ServerOverloaded", "RateLimitExceeded")),
+    ("source_spec.extra.response_protocol_error", "response_protocol_error", "codex-rs/protocol/src/error.rs", ("pub enum CodexErrorDetails", "pub fn retry_delay", "ServerOverloaded", "RateLimitExceeded")),
+    ("source_spec.extra.app_server_error_notification", "app_server_error_notification", "codex-rs/app-server-protocol/src/protocol/v2/notification.rs", ("pub struct ErrorNotification", "will_retry", "automatically retry")),
+    ("source_spec.extra.app_server_bespoke_events", "app_server_bespoke_events", "codex-rs/app-server/src/bespoke_event_handling.rs", ("EventMsg::StreamError", "will_retry: true", "will_retry: false")),
     ("source_spec.extra.tui_side", "tui_side", "codex-rs/tui/src/app/side.rs", ("fork_config.ephemeral = true", "fork_side_thread")),
     ("source_spec.extra.tui_slash_command", "tui_slash_command", "codex-rs/tui/src/slash_command.rs", ("SlashCommand::Side", "SlashCommand::Btw", "ephemeral fork")),
 )
