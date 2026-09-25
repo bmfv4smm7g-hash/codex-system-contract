@@ -84,6 +84,41 @@ does not by itself define a model-context continuation protocol.
 The stateful optimization is therefore concentrated in the transport that can
 actually exploit it.
 
+
+## Model identity has a capability layer
+
+The request `model` slug and server-reported `OpenAI-Model` are names, not stable
+capability identities. Model discovery carries a separate capability vector.
+
+Current catalog revisions can advertise:
+
+```text
+models[].available_access_programs.cyber
+models[].comp_hash
+tool/context/reasoning capability fields
+```
+
+Legacy catalog revisions may omit `available_access_programs` entirely. Its
+presence and values are therefore useful as a catalog-generation or alias
+fingerprint, but not as a unique proof of one model family. `comp_hash` is also
+not unique model identity; it identifies compaction-compatible configurations.
+
+The inference request field is separate:
+
+```text
+turn/start.cyberAccessProgram
+        ↓
+access_programs.cyber
+```
+
+It is a per-response selection, not model discovery metadata.
+
+Startup WebSocket prewarm currently builds its turn with
+`NewTurnContextOptions::default()`, so `cyber_access_program` is null and
+`access_programs` is omitted from that prewarm request. The prewarm response may
+still carry `x-models-etag`, which is a catalog invalidation/version signal.
+
+
 ## Prewarm belongs to the fast path
 
 A WebSocket fast path benefits from doing connection and server-side setup before
