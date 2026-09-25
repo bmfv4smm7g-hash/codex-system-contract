@@ -282,7 +282,7 @@ _RESPONSES_REQUEST_SPECS = (
     ("source_spec.extra.responses_websocket_client", "responses_websocket_client", "codex-rs/websocket-client/src/lib.rs", ("WebSocketConnector", "connect_with_route")),
     ("source_spec.extra.responses_transport_startup", "responses_transport_startup", "codex-rs/core/src/session_startup_prewarm.rs", ("schedule_startup_prewarm", "CodexResponsesRequestKind::Prewarm", "prewarm_websocket")),
     ("source_spec.extra.responses_transport_session", "responses_transport_session", "codex-rs/core/src/session/session.rs", ("schedule_startup_prewarm", "record_initial_history")),
-    ("source_spec.extra.responses_transport_retry", "responses_transport_retry", "codex-rs/core/src/responses_retry.rs", ("handle_retryable_response_stream_error", "try_switch_fallback_transport", "Falling back from WebSockets to HTTPS transport")),
+    ("source_spec.extra.responses_transport_retry", "responses_transport_retry", "codex-rs/core/src/responses_retry.rs", ("try_switch_fallback_transport", "Falling back from WebSockets to HTTPS transport", "retry_state")),
     ("source_spec.extra.responses_transport_provider", "responses_transport_provider", "codex-rs/codex-api/src/provider.rs", ("websocket_url_for_path", "http", "https", "ws", "wss")),
 )
 
@@ -298,11 +298,17 @@ _RESPONSE_EVENT_SPECS = (
 
 _RESPONSES_SERVER_RESPONSE_SPECS = (
     ("source_spec.extra.models_manager", "models_manager", "codex-rs/models-manager/src/manager.rs", ("refresh_if_new_etag", "fetch_and_update_models", "RefreshStrategy::Online", "ModelsCacheEntry")),
+    ("source_spec.extra.responses_server_model_protocol", "responses_server_model_protocol", "codex-rs/protocol/src/openai_models.rs", ("pub struct ModelInfo", "comp_hash")),
+    ("source_spec.extra.responses_server_app_model_protocol", "responses_server_app_model_protocol", "codex-rs/app-server-protocol/src/protocol/v2/model.rs", ("pub struct Model",)),
+    ("source_spec.extra.responses_server_prewarm_turn_context", "responses_server_prewarm_turn_context", "codex-rs/core/src/session/turn_context.rs", ("NewTurnContextOptions", "new_startup_prewarm_turn_from_configuration")),
 )
 
 _RUNTIME_BEHAVIOR_SPECS = (
+    ("source_spec.base.core", "core", "codex-rs/core/src/client.rs", ("turn_state: Arc::new(OnceLock::new())", "client_metadata.insert(X_CODEX_TURN_STATE_HEADER")),
     ("source_spec.extra.response_api_bridge", "response_api_bridge", "codex-rs/codex-api/src/api_bridge.rs", ("map_api_error", "server_is_overloaded", "slow_down", "StatusCode::TOO_MANY_REQUESTS")),
-    ("source_spec.extra.response_protocol_error", "response_protocol_error", "codex-rs/protocol/src/error.rs", ("pub enum CodexErrorDetails", "pub fn is_retryable", "ServerOverloaded", "RateLimitExceeded")),
+    ("source_spec.extra.response_protocol_error", "response_protocol_error", "codex-rs/protocol/src/error.rs", ("pub enum CodexErrorDetails", "pub fn retry_delay", "ServerOverloaded", "RateLimitExceeded")),
+    ("source_spec.extra.app_server_error_notification", "app_server_error_notification", "codex-rs/app-server-protocol/src/protocol/v2/notification.rs", ("pub struct ErrorNotification", "will_retry", "automatically retry")),
+    ("source_spec.extra.app_server_bespoke_events", "app_server_bespoke_events", "codex-rs/app-server/src/bespoke_event_handling.rs", ("EventMsg::StreamError", "will_retry: true", "will_retry: false")),
     ("source_spec.extra.tui_side", "tui_side", "codex-rs/tui/src/app/side.rs", ("fork_config.ephemeral = true", "fork_side_thread")),
     ("source_spec.extra.tui_slash_command", "tui_slash_command", "codex-rs/tui/src/slash_command.rs", ("SlashCommand::Side", "SlashCommand::Btw", "ephemeral fork")),
 )

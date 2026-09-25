@@ -10,6 +10,9 @@ EXTRACTOR_ID = "extractor.responses_server_response"
 CATALOG_VARIANT_IDENTITY_AWARE = "identity_aware"
 CATALOG_VARIANT_ETAG_ONLY = "etag_only"
 CATALOG_VARIANT_UNKNOWN = "unknown"
+CAPABILITY_VARIANT_ACCESS_PROGRAMS = "access_programs_metadata"
+CAPABILITY_VARIANT_LEGACY = "legacy_without_access_programs_metadata"
+CAPABILITY_VARIANT_UNKNOWN = "unknown"
 
 
 def _missing(
@@ -72,6 +75,160 @@ def catalog_variant(manager: SourceFile, provider_models: SourceFile) -> str:
     if all(etag_only_markers):
         return CATALOG_VARIANT_ETAG_ONLY
     return CATALOG_VARIANT_UNKNOWN
+
+
+def capability_variant(model_protocol: SourceFile, app_model_protocol: SourceFile) -> str:
+    """Classify whether model discovery advertises access-program capability metadata."""
+
+    core_has = "pub available_access_programs: Option<ModelAccessPrograms>" in model_protocol.text
+    app_has = (
+        "pub struct ModelAccessPrograms" in app_model_protocol.text
+        and "pub cyber: Vec<CyberAccessProgram>" in app_model_protocol.text
+        and "pub available_access_programs: Option<ModelAccessPrograms>" in app_model_protocol.text
+    )
+    if core_has and app_has:
+        return CAPABILITY_VARIANT_ACCESS_PROGRAMS
+    if not core_has and not app_has:
+        return CAPABILITY_VARIANT_LEGACY
+    return CAPABILITY_VARIANT_UNKNOWN
+
+
+def validate_capability_fingerprint_sources(
+    model_protocol: SourceFile,
+    app_model_protocol: SourceFile,
+    core_client: SourceFile,
+    startup: SourceFile,
+    turn: SourceFile,
+    prewarm_turn_context: SourceFile,
+    diagnostics: DiagnosticCollector,
+) -> tuple[bool, str]:
+    """Validate catalog capability metadata and startup-prewarm projection boundaries."""
+
+    variant = capability_variant(model_protocol, app_model_protocol)
+    complete = True
+    if variant == CAPABILITY_VARIANT_ACCESS_PROGRAMS:
+        complete &= _require(
+            diagnostics,
+            model_protocol,
+            "responses_server_response.model_capability_fingerprint.catalog",
+            (
+                (
+                    "RESPONSES_MODEL_ACCESS_PROGRAMS_METADATA_MISSING",
+                    "pub available_access_programs: Option<ModelAccessPrograms>",
+                ),
+                ("RESPONSES_MODEL_COMP_HASH_MISSING", "pub comp_hash: Option<String>"),
+            ),
+        )
+        complete &= _require(
+            diagnostics,
+            app_model_protocol,
+            "responses_server_response.model_capability_fingerprint.app_server",
+            (
+                ("RESPONSES_APP_MODEL_ACCESS_PROGRAMS_TYPE_MISSING", "pub struct ModelAccessPrograms"),
+                ("RESPONSES_APP_MODEL_ACCESS_PROGRAMS_CYBER_MISSING", "pub cyber: Vec<CyberAccessProgram>"),
+                (
+                    "RESPONSES_APP_MODEL_AVAILABLE_ACCESS_PROGRAMS_MISSING",
+                    "pub available_access_programs: Option<ModelAccessPrograms>",
+                ),
+            ),
+        )
+    elif variant == CAPABILITY_VARIANT_UNKNOWN:
+        complete = False
+        _missing(
+            diagnostics,
+            code="RESPONSES_MODEL_ACCESS_PROGRAMS_METADATA_PARTIAL_DRIFT",
+            token="matching core/app-server available_access_programs capability metadata",
+            source=model_protocol,
+            entity="responses_server_response.model_capability_fingerprint.catalog",
+        )
+
+    complete &= _require(
+        diagnostics,
+        core_client,
+        "responses_server_response.model_capability_fingerprint.request_projection",
+        (
+            (
+                "RESPONSES_ACCESS_PROGRAMS_REQUEST_PROJECTION_MISSING",
+                "request.access_programs = cyber_access_program::for_auth(",
+            ),
+            ("RESPONSES_ACCESS_PROGRAMS_DEFAULT_NONE_MISSING", "access_programs: None"),
+        ),
+    )
+    complete &= _require(
+        diagnostics,
+        turn,
+        "responses_server_response.model_capability_fingerprint.prompt_projection",
+        (("RESPONSES_PROMPT_CYBER_ACCESS_PROGRAM_MISSING", "cyber_access_program: turn_context.cyber_access_program"),),
+    )
+    complete &= _require(
+        diagnostics,
+        startup,
+        "responses_server_response.model_capability_fingerprint.prewarm",
+        (
+            ("RESPONSES_PREWARM_REQUEST_KIND_MISSING", "CodexResponsesRequestKind::Prewarm"),
+            ("RESPONSES_PREWARM_WEBSOCKET_CALL_MISSING", ".prewarm_websocket("),
+            ("RESPONSES_PREWARM_PROMPT_MISSING", "let startup_prompt = build_prompt("),
+        ),
+    )
+    complete &= _require(
+        diagnostics,
+        prewarm_turn_context,
+        "responses_server_response.model_capability_fingerprint.prewarm_context",
+        (
+            (
+                "RESPONSES_PREWARM_DEFAULT_OPTIONS_MISSING",
+                "NewTurnContextOptions::default()",
+            ),
+            (
+                "RESPONSES_PREWARM_CYBER_OPTION_MISSING",
+                "pub(crate) cyber_access_program: Option<CyberAccessProgram>",
+            ),
+        ),
+    )
+    return complete, variant
+
+
+def capability_fingerprint_contract(variant: str) -> dict[str, Any]:
+    """Describe source-proven model-generation fingerprint semantics."""
+
+    current = variant == CAPABILITY_VARIANT_ACCESS_PROGRAMS
+    legacy = variant == CAPABILITY_VARIANT_LEGACY
+    return {
+        "catalog_schema_variant": variant,
+        "catalog_capability_path": "models[].available_access_programs.cyber",
+        "catalog_capability_present": current,
+        "legacy_catalog_metadata_absent": legacy,
+        "slug_is_stable_identity": False,
+        "capability_fingerprint_use": (
+            "field presence and values can distinguish catalog/model generations or aliases, "
+            "but do not uniquely prove one model family by themselves"
+        ),
+        "gpt6_interpretation": (
+            "current Codex source contains GPT-6 family models, but access-program capability "
+            "metadata is not source-proven to be exclusive to GPT-6"
+        ),
+        "comp_hash": {
+            "path": "models[].comp_hash",
+            "meaning": "opaque compaction-compatibility identifier; useful as an additional capability fingerprint",
+            "unique_model_identity": False,
+        },
+        "request_projection": {
+            "field": "access_programs.cyber",
+            "source": "turn/start cyberAccessProgram -> Prompt.cyber_access_program -> Responses request",
+            "auth_gate": "ChatGPT auth; omitted when no explicit program is selected",
+            "is_catalog_capability": False,
+        },
+        "startup_prewarm": {
+            "request_kind": "CodexResponsesRequestKind::Prewarm",
+            "turn_options": "NewTurnContextOptions::default()",
+            "cyber_access_program": None,
+            "access_programs_serialized": False,
+            "identity_implication": (
+                "the current startup prewarm request itself does not expose the access-program "
+                "capability; use the model catalog capability vector (and its x-models-etag invalidation signal)"
+            ),
+        },
+    }
 
 
 def validate_catalog_sources(

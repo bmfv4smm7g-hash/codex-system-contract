@@ -81,12 +81,34 @@ def validate_transport_sources(
         source=retry,
         entity="responses_request.transport.retry",
         tokens=(
-            ("RESPONSES_RETRY_HANDLER_MISSING", "handle_retryable_response_stream_error"),
             ("RESPONSES_RETRY_SWITCH_MISSING", "try_switch_fallback_transport"),
             ("RESPONSES_RETRY_HTTPS_WARNING_MISSING", "Falling back from WebSockets to HTTPS transport."),
             ("RESPONSES_UNBOUNDED_CONNECTION_RETRIES_MISSING", "Feature::UnboundedConnectionRetries"),
         ),
     )
+    if not any(
+        token in retry.text
+        for token in ("handle_response_stream_error", "handle_retryable_response_stream_error")
+    ):
+        complete = False
+        diagnostics.emit(
+            code="RESPONSES_RETRY_HANDLER_MISSING",
+            severity="error",
+            category="responses_request",
+            message="Required Responses retry handler is missing.",
+            extractor_id=extractor_id,
+            entity_id="responses_request.transport.retry",
+            source_refs=[retry.spec_id],
+            details={
+                "path": retry.selected_path,
+                "accepted_symbols": [
+                    "handle_response_stream_error",
+                    "handle_retryable_response_stream_error",
+                ],
+            },
+            recoverable=False,
+            strict_failure=True,
+        )
     complete &= _require(
         diagnostics,
         extractor_id=extractor_id,

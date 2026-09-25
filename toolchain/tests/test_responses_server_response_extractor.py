@@ -31,6 +31,7 @@ def _snapshot(
     break_ws_handshake: bool = False,
     break_models_refresh: bool = False,
     break_models_endpoint_etag: bool = False,
+    legacy_access_program_metadata: bool = False,
 ) -> SourceSnapshot:
     common = '''
 pub enum ResponseEvent {
@@ -115,6 +116,11 @@ async fn run_websocket_response_stream() {{
 }}
 '''
     turn = '''
+fn build_prompt(turn_context: &TurnContext) -> Prompt {
+    Prompt {
+        cyber_access_program: turn_context.cyber_access_program,
+    }
+}
 match event {
     ResponseEvent::ModelsEtag(etag) => {
         sess.services
@@ -122,6 +128,87 @@ match event {
             .refresh_if_new_etag(etag, turn_context.config.http_client_factory())
             .await;
     }
+}
+'''
+    core_client = '''
+fn build_responses_request() -> ResponsesApiRequest {
+    ResponsesApiRequest {
+        access_programs: None,
+    }
+}
+async fn stream() {
+    request.access_programs = cyber_access_program::for_auth(
+        client_setup.auth.as_ref(),
+        prompt.cyber_access_program,
+    );
+}
+'''
+    startup = '''
+async fn schedule_startup_prewarm_inner() {
+    let startup_prompt = build_prompt(
+        Vec::new(),
+        step_context.as_ref(),
+        BaseInstructions::default(),
+    );
+    let responses_metadata = session
+        .responses_metadata(step_context.as_ref(), CodexResponsesRequestKind::Prewarm)
+        .await;
+    client_session
+        .prewarm_websocket(
+            &startup_prompt,
+            &step_context.settings.model_info,
+            &step_context.session_telemetry,
+            None,
+            step_context.settings.reasoning_summary,
+            step_context.settings.service_tier.clone(),
+            &responses_metadata,
+        )
+        .await?;
+}
+'''
+    prewarm_turn_context = '''
+#[derive(Default)]
+pub(crate) struct NewTurnContextOptions {
+    pub(crate) cyber_access_program: Option<CyberAccessProgram>,
+}
+async fn new_startup_prewarm_turn_from_configuration() {
+    self.new_turn_context_from_configuration(
+        sub_id,
+        session_configuration,
+        NewTurnContextOptions::default(),
+        TurnContextBuildMode::StartupPrewarm,
+        GitEnrichmentPolicy::Skip,
+    )
+    .await
+}
+'''
+    if legacy_access_program_metadata:
+        model_protocol = '''
+pub struct ModelInfo {
+    pub slug: String,
+    pub comp_hash: Option<String>,
+}
+'''
+        app_model_protocol = '''
+pub struct Model {
+    pub model: String,
+}
+'''
+    else:
+        model_protocol = '''
+pub struct ModelInfo {
+    pub slug: String,
+    pub available_access_programs: Option<ModelAccessPrograms>,
+    pub comp_hash: Option<String>,
+}
+'''
+        app_model_protocol = '''
+pub struct ModelAccessPrograms {
+    pub cyber: Vec<CyberAccessProgram>,
+}
+pub struct Model {
+    pub model: String,
+    pub available_access_programs: Option<ModelAccessPrograms>,
 }
 '''
     online_refresh = (
@@ -203,12 +290,17 @@ pub async fn list_models(&self) {{
 '''
     rows = {
         "source_spec.base.common": _file("source_spec.base.common", "common", "codex-rs/codex-api/src/common.rs", common, SourceGroup.BASE),
+        "source_spec.base.core": _file("source_spec.base.core", "core", "codex-rs/core/src/client.rs", core_client, SourceGroup.BASE),
         "source_spec.base.response_sse": _file("source_spec.base.response_sse", "response_sse", "codex-rs/codex-api/src/sse/responses.rs", sse, SourceGroup.BASE),
         "source_spec.base.ws": _file("source_spec.base.ws", "ws", "codex-rs/codex-api/src/endpoint/responses_websocket.rs", ws, SourceGroup.BASE),
         "source_spec.extra.prompt_turn": _file("source_spec.extra.prompt_turn", "prompt_turn", "codex-rs/core/src/session/turn.rs", turn),
         "source_spec.extra.models_manager": _file("source_spec.extra.models_manager", "models_manager", "codex-rs/models-manager/src/manager.rs", manager),
         "source_spec.surface.models_endpoint": _file("source_spec.surface.models_endpoint", "models_endpoint", "codex-rs/codex-api/src/endpoint/models.rs", models_endpoint, SourceGroup.SURFACE),
         "source_spec.surface.model_provider_models": _file("source_spec.surface.model_provider_models", "model_provider_models", "codex-rs/model-provider/src/models_endpoint.rs", provider_models, SourceGroup.SURFACE),
+        "source_spec.extra.responses_transport_startup": _file("source_spec.extra.responses_transport_startup", "responses_transport_startup", "codex-rs/core/src/session_startup_prewarm.rs", startup),
+        "source_spec.extra.responses_server_model_protocol": _file("source_spec.extra.responses_server_model_protocol", "responses_server_model_protocol", "codex-rs/protocol/src/openai_models.rs", model_protocol),
+        "source_spec.extra.responses_server_app_model_protocol": _file("source_spec.extra.responses_server_app_model_protocol", "responses_server_app_model_protocol", "codex-rs/app-server-protocol/src/protocol/v2/model.rs", app_model_protocol),
+        "source_spec.extra.responses_server_prewarm_turn_context": _file("source_spec.extra.responses_server_prewarm_turn_context", "responses_server_prewarm_turn_context", "codex-rs/core/src/session/turn_context.rs", prewarm_turn_context),
     }
     revision = SourceRevision("fixture", "openai/codex", "fixture", "1" * 40, SourceSnapshot.digest_files(rows), False)
     return SourceSnapshot(revision, rows)
@@ -338,6 +430,38 @@ def test_models_etag_is_invalidation_signal_then_separate_catalog_fetch() -> Non
     assert "ModelsResponse" in contract["catalog_fetch"]["response_body"]
     assert "ModelsCacheEntry" in contract["catalog_update"]["cache_entry"]
     assert contract["wire_version_relation"]["models_response_version"] == "ETag"
+
+
+
+def test_access_program_capability_is_a_catalog_fingerprint_not_slug_identity() -> None:
+    result = ResponsesServerResponseExtractor().extract(_snapshot(), DiagnosticCollector())
+    fingerprint = result.data["model_capability_fingerprint"]
+
+    assert fingerprint["catalog_schema_variant"] == "access_programs_metadata"
+    assert fingerprint["catalog_capability_path"] == "models[].available_access_programs.cyber"
+    assert fingerprint["catalog_capability_present"] is True
+    assert fingerprint["legacy_catalog_metadata_absent"] is False
+    assert fingerprint["slug_is_stable_identity"] is False
+    assert fingerprint["comp_hash"]["unique_model_identity"] is False
+    assert fingerprint["request_projection"]["field"] == "access_programs.cyber"
+    assert fingerprint["request_projection"]["is_catalog_capability"] is False
+    assert fingerprint["startup_prewarm"]["cyber_access_program"] is None
+    assert fingerprint["startup_prewarm"]["access_programs_serialized"] is False
+
+
+def test_legacy_catalog_without_access_program_metadata_is_classified_without_failing() -> None:
+    diagnostics = DiagnosticCollector()
+    result = ResponsesServerResponseExtractor().extract(
+        _snapshot(legacy_access_program_metadata=True),
+        diagnostics,
+    )
+    assert result.semantic_complete
+    assert diagnostics.summary()["error"] == 0
+    fingerprint = result.data["model_capability_fingerprint"]
+    assert fingerprint["catalog_schema_variant"] == "legacy_without_access_programs_metadata"
+    assert fingerprint["catalog_capability_present"] is False
+    assert fingerprint["legacy_catalog_metadata_absent"] is True
+    assert fingerprint["request_projection"]["field"] == "access_programs.cyber"
 
 
 def test_response_model_payload_becoming_authoritative_fails_closed() -> None:

@@ -17,6 +17,9 @@ from typing import Any
 from ..diagnostics import DiagnosticCollector
 from ..models import SourceFile, SourceSnapshot
 from .registry import ExtractorResult, register_extractor
+from .runtime_behavior_responses import app_server_retry_surface
+from .runtime_behavior_responses import codex_error_retryability
+from .runtime_behavior_responses import turn_state_reconnect
 
 
 EXTRACTOR_ID = "extractor.runtime_behavior"
@@ -24,10 +27,13 @@ SCHEMA_VERSION = "1.1.0"
 
 SSE = "source_spec.base.response_sse"
 WS = "source_spec.base.ws"
+CORE = "source_spec.base.core"
 RESPONSES_RETRY = "source_spec.extra.responses_transport_retry"
 PROMPT_TURN = "source_spec.extra.prompt_turn"
 API_BRIDGE = "source_spec.extra.response_api_bridge"
 PROTOCOL_ERROR = "source_spec.extra.response_protocol_error"
+APP_SERVER_ERROR_NOTIFICATION = "source_spec.extra.app_server_error_notification"
+APP_SERVER_BESPOKE_EVENTS = "source_spec.extra.app_server_bespoke_events"
 THREAD_PROTOCOL = "source_spec.extra.app_server_thread"
 THREAD_PROCESSOR = "source_spec.extra.app_server_thread_processor"
 THREAD_MANAGER = "source_spec.extra.app_server_thread_manager"
@@ -39,10 +45,13 @@ TUI_SLASH = "source_spec.extra.tui_slash_command"
 SOURCE_IDS = (
     SSE,
     WS,
+    CORE,
     RESPONSES_RETRY,
     PROMPT_TURN,
     API_BRIDGE,
     PROTOCOL_ERROR,
+    APP_SERVER_ERROR_NOTIFICATION,
+    APP_SERVER_BESPOKE_EVENTS,
     THREAD_PROTOCOL,
     THREAD_PROCESSOR,
     THREAD_MANAGER,
@@ -115,31 +124,6 @@ def _struct_fields(source: SourceFile | None, name: str) -> list[str]:
     )
 
 
-def _codex_error_retryability(source: SourceFile | None) -> dict[str, Any]:
-    if source is None:
-        return {"observed": False, "retryable": [], "terminal": []}
-    body = _balanced_body(source.text, r"pub\s+fn\s+is_retryable\s*\(&self\)\s*->\s*bool")
-    if body is None:
-        return {"observed": False, "retryable": [], "terminal": []}
-
-    table: dict[str, bool] = {}
-    cursor = 0
-    for match in re.finditer(r"=>\s*(true|false)\s*,", body):
-        arm = body[cursor : match.start()]
-        value = match.group(1) == "true"
-        for variant in re.findall(r"CodexErrorDetails::([A-Za-z_][A-Za-z0-9_]*)", arm):
-            table[variant] = value
-        cursor = match.end()
-
-    return {
-        "observed": bool(table),
-        "retryable": sorted(name for name, retryable in table.items() if retryable),
-        "terminal": sorted(name for name, retryable in table.items() if not retryable),
-        "table": {name: table[name] for name in sorted(table)},
-        "source_semantics": "CodexErr::is_retryable match table",
-    }
-
-
 def _api_bridge_map(source: SourceFile | None) -> dict[str, Any]:
     return {
         "retryable_api_error": _rule(
@@ -194,6 +178,7 @@ def _responses_error_map(
     retry: SourceFile | None,
     api_bridge: SourceFile | None,
     protocol_error: SourceFile | None,
+    core: SourceFile | None,
 ) -> dict[str, Any]:
     return {
         "response_failed": {
@@ -305,19 +290,38 @@ def _responses_error_map(
             ),
         },
         "api_to_codex_error": _api_bridge_map(api_bridge),
-        "codex_error_retryability": _codex_error_retryability(protocol_error),
+        "codex_error_retryability": codex_error_retryability(protocol_error),
+        "websocket_reconnect_state": turn_state_reconnect(core, ws),
         "turn_retry_control": {
-            "retryability_gate": _rule(
-                turn,
-                tokens=("if !err.is_retryable()", "handle_retryable_response_stream_error"),
-                source_semantics="sampling loop returns terminal errors before entering retry handler",
-                gate="CodexErr::is_retryable()",
+            "retryability_gate": (
+                _rule(
+                    retry,
+                    tokens=("let Some(delay) = err.retry_delay(retry_count) else", "return Err(err);"),
+                    source_semantics="current retry handler treats retry_delay=None as terminal",
+                    gate="CodexErr::retry_delay(retry_count)",
+                )
+                if _observed(retry, "let Some(delay) = err.retry_delay(retry_count) else")
+                else _rule(
+                    turn,
+                    tokens=("if !err.is_retryable()", "handle_retryable_response_stream_error"),
+                    source_semantics="legacy sampling loop rejects terminal errors before the retry handler",
+                    gate="CodexErr::is_retryable()",
+                )
             ),
-            "retry_delay": _rule(
-                retry,
-                tokens=("err.retry_delay().unwrap_or_else(|| backoff(retry_count))",),
-                source_semantics="server retry advice wins over local backoff",
-                priority=["error retry_delay", "local backoff"],
+            "retry_delay": (
+                _rule(
+                    protocol_error,
+                    tokens=("pub fn retry_delay(&self, retry_count: u64)", "self.server_retry_delay", "backoff(retry_count)"),
+                    source_semantics="current CodexErr retry policy selects server advice or local backoff",
+                    priority=["server_retry_delay", "local backoff"],
+                )
+                if _observed(protocol_error, "pub fn retry_delay(&self, retry_count: u64)")
+                else _rule(
+                    retry,
+                    tokens=("err.retry_delay().unwrap_or_else(|| backoff(retry_count))",),
+                    source_semantics="legacy retry handler selects server advice or local backoff",
+                    priority=["error retry_delay", "local backoff"],
+                )
             ),
             "websocket_to_http_fallback": _rule(
                 retry,
@@ -496,6 +500,12 @@ class RuntimeBehaviorExtractor:
                 sources[RESPONSES_RETRY],
                 sources[API_BRIDGE],
                 sources[PROTOCOL_ERROR],
+                sources[CORE],
+            ),
+            "client_retry_surface": app_server_retry_surface(
+                sources[APP_SERVER_ERROR_NOTIFICATION],
+                sources[APP_SERVER_BESPOKE_EVENTS],
+                codex_error_retryability(sources[PROTOCOL_ERROR]),
             ),
             "fork": _fork_behavior(
                 sources[THREAD_PROTOCOL],
